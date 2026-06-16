@@ -6,6 +6,8 @@ export const tableOptions = [
     { value: 'vendor-daily', label: 'Vendor Daily Logs' },
     { value: 'vendor-monthly', label: 'Vendor Monthly Logs' },
     { value: 'franchise-or-merchant-notification', label: 'Franchise Or Merchant Notification Logs'},
+    { value: 'digilocker', label: 'Digilocker Logs' },
+    { value: 'mosambee', label: 'Mosambee Notification Logs' },
 ];
 
 export const filterOptions = {
@@ -42,5 +44,16 @@ export const filterOptions = {
         { value: 'all', label: 'All Notification Logs', endpoint: '/admin-logs/franchise-or-merchant-notification', status: 'all'},
         { value: 'false', label: 'Failed Notifications Logs', endpoint: '/admin-logs/franchise-or-merchant-notification', status: 'false'},
         { value: 'true', label: 'Success Notification Logs', endpoint: '/admin-logs/franchise-or-merchant-notification', status: 'true'},
+    ],
+    digilocker: [
+        { value: 'all', label: 'All Digilocker Logs', endpoint: '/admin-logs/digilocker', status: 'all' },
+        { value: 'success', label: 'Success Logs', endpoint: '/admin-logs/digilocker', status: 'SUCCESS' },
+        { value: 'failed', label: 'Failed Logs', endpoint: '/admin-logs/digilocker', status: 'FAILED' },
+    ],
+    mosambee: [
+        { value: 'all', label: 'All Notifications', endpoint: '/admin-logs/mosambee', status: 'all' },
+        { value: 'success', label: 'Success Status', endpoint: '/admin-logs/mosambee', status: 'SUCCESS' },
+        { value: 'failed', label: 'Failed Status', endpoint: '/admin-logs/mosambee', status: 'FAILED' },
+        { value: 'received', label: 'Received Status', endpoint: '/admin-logs/mosambee', status: 'RECEIVED' },
     ],
 };
