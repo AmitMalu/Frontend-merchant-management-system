@@ -425,6 +425,187 @@ export const getLogColumns = (tableType, openModal) => {
                 },
             ];
 
+        case 'digilocker':
+            return [
+                {
+                    accessorKey: 'createdAt',
+                    header: 'Timestamp',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">
+                            {new Date(row.getValue('createdAt')).toLocaleString('en-US', {
+                                month: 'short',
+                                day: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'clientId',
+                    header: 'Client ID',
+                    cell: ({ row }) => (
+                        <div className="text-sm font-mono text-gray-900 truncate max-w-[120px]" title={row.getValue('clientId')}>
+                            {row.getValue('clientId') || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'merchantId',
+                    header: 'Merchant ID',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">
+                            {row.getValue('merchantId') || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'franchiseId',
+                    header: 'Franchise ID',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">
+                            {row.getValue('franchiseId') || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'apiName',
+                    header: 'API Name',
+                    cell: ({ row }) => (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded bg-purple-100 text-purple-800">
+                            {row.getValue('apiName') || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    accessorKey: 'processStatus',
+                    header: 'Status',
+                    cell: ({ row }) => (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded ${
+                            row.getValue('processStatus') === 'SUCCESS' ? 'bg-green-100 text-green-800' :
+                            row.getValue('processStatus') === 'FAILED' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }`}>
+                            {row.getValue('processStatus') || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    accessorKey: 'httpStatus',
+                    header: 'HTTP Status',
+                    cell: ({ row }) => (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded ${
+                            row.getValue('httpStatus') >= 200 && row.getValue('httpStatus') < 300 ? 'bg-green-100 text-green-800' :
+                            row.getValue('httpStatus') >= 400 ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }`}>
+                            {row.getValue('httpStatus') || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    accessorKey: 'processingTimeMs',
+                    header: 'Time (ms)',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">
+                            {row.getValue('processingTimeMs') !== null && row.getValue('processingTimeMs') !== undefined
+                                ? `${row.getValue('processingTimeMs')} ms`
+                                : '—'}
+                        </div>
+                    ),
+                },
+                {
+                    id: 'actions',
+                    header: 'Actions',
+                    cell: ({ row }) => (
+                        <button
+                            onClick={() => openModal(row.original)}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="View Details"
+                        >
+                            <Eye size={18} />
+                        </button>
+                    ),
+                },
+            ];
+
+        case 'mosambee':
+            return [
+                {
+                    accessorKey: 'createdAt',
+                    header: 'Timestamp',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">
+                            {new Date(row.getValue('createdAt')).toLocaleString('en-US', {
+                                month: 'short',
+                                day: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'txnId',
+                    header: 'Transaction ID',
+                    cell: ({ row }) => (
+                        <div className="text-sm font-mono text-gray-900 truncate max-w-[150px]">
+                            {row.getValue('txnId') || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'processStatus',
+                    header: 'Status',
+                    cell: ({ row }) => (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded ${
+                            row.getValue('processStatus') === 'SUCCESS' ? 'bg-green-100 text-green-800' :
+                            row.getValue('processStatus') === 'FAILED' ? 'bg-red-100 text-red-800' :
+                            row.getValue('processStatus') === 'RECEIVED' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }`}>
+                            {row.getValue('processStatus') || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    accessorKey: 'retryCount',
+                    header: 'Retries',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">
+                            {row.getValue('retryCount') !== null && row.getValue('retryCount') !== undefined
+                                ? row.getValue('retryCount')
+                                : 0}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'processingTimeMs',
+                    header: 'Time (ms)',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">
+                            {row.getValue('processingTimeMs') !== null && row.getValue('processingTimeMs') !== undefined
+                                ? `${row.getValue('processingTimeMs')} ms`
+                                : '—'}
+                        </div>
+                    ),
+                },
+                {
+                    id: 'actions',
+                    header: 'Actions',
+                    cell: ({ row }) => (
+                        <button
+                            onClick={() => openModal(row.original)}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="View Details"
+                        >
+                            <Eye size={18} />
+                        </button>
+                    ),
+                },
+            ];
 
         default:
             return [];
