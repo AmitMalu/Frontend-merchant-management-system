@@ -435,13 +435,17 @@ export const BasicDetailsForm = ({
                                 message: "Invalid PAN Number format"
                             }
                         })}
-                        onChange={() => setPanVerified(false)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
 
                     <button
                         type="button"
-                        onClick={() => onVerifyPan(watch("panNumber"))}
+                        onClick={() =>
+                             onVerifyPan(
+                                watch("panNumber"),
+                                watch("businessName")
+                            )
+                        }
                         className={`px-4 py-2 rounded text-white ${panVerified
                             ? "bg-green-600"
                             : "bg-blue-600 hover:bg-blue-700"
@@ -581,7 +585,6 @@ export const BankDetailsForm = ({
                     {...register("accountNumber", {
                         required: "Account Number is required"
                     })}
-                    onChange={() => setBankVerified(false)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
 
@@ -608,7 +611,6 @@ export const BankDetailsForm = ({
                                 message: "Invalid IFSC format"
                             }
                         })}
-                        onChange={() => setBankVerified(false)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
 
