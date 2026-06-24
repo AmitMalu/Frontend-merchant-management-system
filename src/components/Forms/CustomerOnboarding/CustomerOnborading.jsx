@@ -95,49 +95,184 @@ const CustomerOnboarding = ({
     }
   }
 
-  const handleVerifyPan = async (panNumber) => {
-    try {
-      const response = await api.post("/verification/pan", {
-        panNumber
-      })
+  const handleVerifyPan = async (
+  panNumber,
+  fullName
+) => {
 
-      if (response.data.status === "SUCCESS") {
-        setPanVerified(true)
-        toast.success(response.data.message)
-      } else {
-        setPanVerified(false)
-        toast.error(response.data.message || "PAN verification failed")
-      }
-    } catch (error) {
-      setPanVerified(false)
-      toast.error("PAN verification failed")
-    }
+  console.log("PAN =", panNumber)
+console.log("FULL NAME =", fullName)
+
+  if (!panNumber) {
+
+    toast.error("Please enter PAN Number")
+    return
   }
 
-  const handleVerifyBank = async (accountNumber, ifscCode) => {
+  if (!fullName) {
 
-  if (!accountNumber || !ifscCode) {
-    toast.error("Enter Account Number and IFSC Code first")
+    toast.error("Please enter Business/Franchise Name")
     return
   }
 
   try {
-    const response = await api.post("/verification/bank", {
-      accountNumber,
-      ifsc: ifscCode
-    })
 
-    if (response.data.status === "SUCCESS") {
-      setBankVerified(true)
-      toast.success(response.data.message)
-    } else {
-      setBankVerified(false)
-      toast.error(response.data.message)
+    const response =
+      await api.post(
+        "/verification/pan",
+        {
+
+          panNumber,
+          fullName,
+          dob: "2000-01-01"
+
+        }
+      )
+
+    if (
+      response.data.status ===
+      "SUCCESS"
+    ) {
+
+      setPanVerified(true)
+
+      toast.success(
+        response.data.message
+      )
+
     }
-  } catch (error) {
-    setBankVerified(false)
-    toast.error("Bank verification failed")
+
+    else {
+
+      setPanVerified(false)
+
+      toast.error(
+
+        response.data.message ||
+
+        "PAN verification failed"
+
+      )
+
+    }
+
   }
+
+  catch (error) {
+
+    setPanVerified(false)
+
+    toast.error(
+
+      error.response?.data?.message ||
+
+      "PAN verification failed"
+
+    )
+
+  }
+
+}
+  
+
+  const handleVerifyBank =
+async (
+
+accountNumber,
+
+ifscCode
+
+) => {
+
+  if (
+
+      !accountNumber ||
+
+      !ifscCode
+
+  ){
+
+      toast.error(
+
+      "Enter Account Number and IFSC"
+
+      )
+
+      return
+
+  }
+
+  try{
+
+      const response =
+      await api.post(
+
+      "/verification/bank",
+
+      {
+
+          accountNumber,
+
+          ifsc: ifscCode
+
+      }
+
+      )
+
+      if(
+
+      response.data.status
+
+      ===
+
+      "SUCCESS"
+
+      ){
+
+          setBankVerified(true)
+
+          setValue(
+
+          "accountHolderName",
+
+          response.data.data.full_name
+
+          )
+
+          toast.success(
+
+          "Bank verified"
+
+          )
+
+      }
+
+      else{
+
+          setBankVerified(false)
+
+          toast.error(
+
+          response.data.message
+
+          )
+
+      }
+
+  }
+
+  catch(error){
+
+      setBankVerified(false)
+
+      toast.error(
+
+      "Bank verification failed"
+
+      )
+
+  }
+
 }
 
   // Handle customer type selection
