@@ -44,6 +44,7 @@ const AdminSupportTickets = lazy(() => import('../../components/Admin/AdminSuppo
 const SettledUnsettledTransactions = lazy(() => import('../../components/Reports/SettledUnsettledTransactionsReports.jsx'));
 const PayoutTransaction = lazy(() => import('../../components/Reports/PayoutTransactionsReports.jsx'));
 const PrefundAuthorization = lazy(() => import('../../components/Admin/PrefundAuthorization.jsx'));
+const MerchantSettings = lazy(() => import('../../components/Forms/MerchantSettings.jsx'));
 
 export const adminRoutes = [
   {
@@ -191,6 +192,10 @@ export const adminRoutes = [
       {
         path: "prefund-authorization",
         element: <PrefundAuthorization />
+      },
+      {
+        path: "merchant-settings",
+        element: <MerchantSettings />
       },
     ]
   },
