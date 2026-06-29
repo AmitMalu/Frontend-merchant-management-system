@@ -440,12 +440,7 @@ export const BasicDetailsForm = ({
 
                     <button
                         type="button"
-                        onClick={() =>
-                             onVerifyPan(
-                                watch("panNumber"),
-                                watch("businessName")
-                            )
-                        }
+                        onClick={() => onVerifyPan(watch("panNumber"))}
                         className={`px-4 py-2 rounded text-white ${panVerified
                             ? "bg-green-600"
                             : "bg-blue-600 hover:bg-blue-700"

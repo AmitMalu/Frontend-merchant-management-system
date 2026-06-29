@@ -95,23 +95,13 @@ const CustomerOnboarding = ({
     }
   }
 
-  const handleVerifyPan = async (
-  panNumber,
-  fullName
-) => {
+  const handleVerifyPan = async (panNumber) => {
 
   console.log("PAN =", panNumber)
-console.log("FULL NAME =", fullName)
 
   if (!panNumber) {
 
     toast.error("Please enter PAN Number")
-    return
-  }
-
-  if (!fullName) {
-
-    toast.error("Please enter Business/Franchise Name")
     return
   }
 
@@ -121,11 +111,7 @@ console.log("FULL NAME =", fullName)
       await api.post(
         "/verification/pan",
         {
-
           panNumber,
-          fullName,
-          dob: "2000-01-01"
-
         }
       )
 
