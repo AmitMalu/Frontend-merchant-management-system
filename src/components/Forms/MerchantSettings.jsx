@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
+  DatabaseZap,
 } from "lucide-react";
 import api from "../../constants/API/axiosInstance";
 import { toast } from "react-toastify";
@@ -45,6 +46,18 @@ const BooleanToggle = ({ label, description, value, onChange }) => (
   </div>
 );
 
+// ─── Settings Skeleton loader ─────────────────────────────────────────────────
+const SettingsSkeleton = () => (
+  <div className="animate-pulse space-y-4">
+    <div className="h-4 w-32 bg-gray-200 rounded" />
+    <div className="h-10 w-64 bg-gray-200 rounded-lg" />
+    <hr className="border-gray-200" />
+    <div className="h-4 w-32 bg-gray-200 rounded" />
+    <div className="h-14 bg-gray-200 rounded-lg" />
+    <div className="h-14 bg-gray-200 rounded-lg" />
+  </div>
+);
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 const MerchantSettings = () => {
   const { register, watch, reset } = useForm({
@@ -61,12 +74,16 @@ const MerchantSettings = () => {
     useState([]);
 
   const [loading, setLoading] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Form values
   const [lienAmount, setLienAmount] = useState("");
   const [isPayout, setIsPayout] = useState(false);
   const [isCreditCardBillPayment, setIsCreditCardBillPayment] = useState(false);
+
+  // Whether the merchant already has saved settings
+  const [hasExistingSettings, setHasExistingSettings] = useState(false);
 
   // Errors
   const [errors, setErrors] = useState({});
@@ -75,7 +92,7 @@ const MerchantSettings = () => {
   const franchiseId = watch("franchiseId");
   const merchantId = watch("merchantId");
 
-  // ── Fetch initial data ─────────────────────────────────────────────────────
+  // ── Fetch franchises + direct merchants on mount ───────────────────────────
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
@@ -121,6 +138,49 @@ const MerchantSettings = () => {
     fetchFranchiseMerchants();
   }, [franchiseId, customerType]);
 
+  // ── Fetch existing settings whenever a merchant is selected ───────────────
+  useEffect(() => {
+    if (!merchantId) {
+      // Clear settings when merchant is deselected
+      setLienAmount("");
+      setIsPayout(false);
+      setIsCreditCardBillPayment(false);
+      setHasExistingSettings(false);
+      setErrors({});
+      return;
+    }
+
+    const fetchMerchantSettings = async () => {
+      setSettingsLoading(true);
+      setHasExistingSettings(false);
+      try {
+        const response = await api.get(`/merchants/${merchantId}/settings`);
+        const data = response.data;
+
+        // Populate form with saved values
+        setLienAmount(data.lienAmount ?? "");
+        setIsPayout(data.isPayout ?? false);
+        setIsCreditCardBillPayment(data.isCreditCardBillPayment ?? false);
+        setHasExistingSettings(true);
+      } catch (error) {
+        // 404 means no settings saved yet — that's fine, keep defaults
+        if (error?.response?.status === 404) {
+          setLienAmount("");
+          setIsPayout(false);
+          setIsCreditCardBillPayment(false);
+          setHasExistingSettings(false);
+        } else {
+          console.error("Error fetching merchant settings:", error);
+          toast.error("Could not load existing settings for this merchant.");
+        }
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    fetchMerchantSettings();
+  }, [merchantId]);
+
   // ── Merchant list for dropdown ─────────────────────────────────────────────
   const getMerchantsForSelection = () => {
     return customerType === "franchise"
@@ -136,7 +196,7 @@ const MerchantSettings = () => {
     if (customerType === "franchise" && !franchiseId)
       newErrors.franchiseId = "Please select a franchise";
     if (!merchantId) newErrors.merchantId = "Please select a merchant";
-    if (!lienAmount && lienAmount !== 0)
+    if (lienAmount === "" || lienAmount === null || lienAmount === undefined)
       newErrors.lienAmount = "Please enter a lien amount";
     if (lienAmount !== "" && isNaN(Number(lienAmount)))
       newErrors.lienAmount = "Lien amount must be a valid number";
@@ -159,6 +219,7 @@ const MerchantSettings = () => {
         isPayout,
         isCreditCardBillPayment,
       });
+      setHasExistingSettings(true);
       toast.success("Merchant settings updated successfully!");
     } catch (error) {
       console.error("Error updating merchant settings:", error);
@@ -180,6 +241,7 @@ const MerchantSettings = () => {
     setLienAmount("");
     setIsPayout(false);
     setIsCreditCardBillPayment(false);
+    setHasExistingSettings(false);
     setErrors({});
   };
 
@@ -189,8 +251,9 @@ const MerchantSettings = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      {/* ── Page Header ── */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+
+        {/* ── Page Header ── */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
@@ -208,7 +271,8 @@ const MerchantSettings = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* ── Selection Section ── */}
+
+          {/* ── Merchant Selection ── */}
           <div>
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
               <span className="w-5 h-0.5 bg-indigo-500 rounded" />
@@ -233,9 +297,7 @@ const MerchantSettings = () => {
                   <option value="franchise">Franchise</option>
                 </select>
                 {errors.customerType && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.customerType}
-                  </p>
+                  <p className="text-red-500 text-xs mt-1">{errors.customerType}</p>
                 )}
               </div>
 
@@ -260,9 +322,7 @@ const MerchantSettings = () => {
                     ))}
                   </select>
                   {errors.franchiseId && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.franchiseId}
-                    </p>
+                    <p className="text-red-500 text-xs mt-1">{errors.franchiseId}</p>
                   )}
                 </div>
               )}
@@ -288,15 +348,13 @@ const MerchantSettings = () => {
                     ))}
                   </select>
                   {errors.merchantId && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.merchantId}
-                    </p>
+                    <p className="text-red-500 text-xs mt-1">{errors.merchantId}</p>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Loading indicator */}
+            {/* Dropdown loading indicator */}
             {loading && (
               <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
                 <div className="animate-spin h-3.5 w-3.5 border-2 border-indigo-500 border-t-transparent rounded-full" />
@@ -305,129 +363,140 @@ const MerchantSettings = () => {
             )}
           </div>
 
-          {/* ── Settings Section (visible once merchant is selected) ── */}
+          {/* ── Settings Section ── */}
           {merchantId && (
             <>
               <hr className="border-gray-200" />
 
-              {/* Lien Amount */}
-              <div>
-                <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                  <span className="w-5 h-0.5 bg-indigo-500 rounded" />
-                  Lien Amount
-                </h2>
+              {/* Existing settings banner */}
+              {!settingsLoading && hasExistingSettings && (
+                <div className="flex items-center gap-2.5 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                  <DatabaseZap className="h-4 w-4 text-green-600 shrink-0" />
+                  <span>
+                    Existing settings loaded — review and save to update.
+                  </span>
+                </div>
+              )}
 
-                <div className="max-w-sm">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Lien Amount (₹){" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <IndianRupee className="h-4 w-4 text-gray-400" />
+              {/* No settings yet banner */}
+              {!settingsLoading && !hasExistingSettings && (
+                <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                  <SlidersHorizontal className="h-4 w-4 text-amber-600 shrink-0" />
+                  <span>
+                    No settings saved yet for this merchant. Configure and save below.
+                  </span>
+                </div>
+              )}
+
+              {/* Skeleton while fetching settings */}
+              {settingsLoading ? (
+                <SettingsSkeleton />
+              ) : (
+                <>
+                  {/* Lien Amount */}
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                      <span className="w-5 h-0.5 bg-indigo-500 rounded" />
+                      Lien Amount
+                    </h2>
+
+                    <div className="max-w-sm">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Lien Amount (₹) <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <IndianRupee className="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={lienAmount}
+                          onChange={(e) => {
+                            setLienAmount(e.target.value);
+                            if (errors.lienAmount)
+                              setErrors((prev) => ({ ...prev, lienAmount: "" }));
+                          }}
+                          placeholder="Enter lien amount"
+                          className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                            errors.lienAmount
+                              ? "border-red-400 bg-red-50"
+                              : "border-gray-300 bg-white"
+                          }`}
+                        />
+                      </div>
+                      {errors.lienAmount && (
+                        <p className="text-red-500 text-xs mt-1">{errors.lienAmount}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        The lien amount will be held against the merchant's wallet balance.
+                      </p>
                     </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={lienAmount}
-                      onChange={(e) => {
-                        setLienAmount(e.target.value);
-                        if (errors.lienAmount)
-                          setErrors((prev) => ({ ...prev, lienAmount: "" }));
-                      }}
-                      placeholder="Enter lien amount"
-                      className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                        errors.lienAmount
-                          ? "border-red-400 bg-red-50"
-                          : "border-gray-300 bg-white"
-                      }`}
-                    />
                   </div>
-                  {errors.lienAmount && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.lienAmount}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    The lien amount will be held against the merchant's wallet
-                    balance.
-                  </p>
-                </div>
-              </div>
 
-              <hr className="border-gray-200" />
+                  <hr className="border-gray-200" />
 
-              {/* Feature Toggles */}
-              <div>
-                <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
-                  <span className="w-5 h-0.5 bg-indigo-500 rounded" />
-                  Feature Settings
-                </h2>
+                  {/* Feature Toggles */}
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                      <span className="w-5 h-0.5 bg-indigo-500 rounded" />
+                      Feature Settings
+                    </h2>
 
-                <div className="space-y-3">
-                  <BooleanToggle
-                    label="Payout"
-                    description="Allow this merchant to initiate payout transactions"
-                    value={isPayout}
-                    onChange={setIsPayout}
-                  />
-                  <BooleanToggle
-                    label="Credit Card Bill Payment"
-                    description="Allow this merchant to accept credit card bill payments"
-                    value={isCreditCardBillPayment}
-                    onChange={setIsCreditCardBillPayment}
-                  />
-                </div>
-              </div>
+                    <div className="space-y-3">
+                      <BooleanToggle
+                        label="Payout"
+                        description="Allow this merchant to initiate payout transactions"
+                        value={isPayout}
+                        onChange={setIsPayout}
+                      />
+                      <BooleanToggle
+                        label="Credit Card Bill Payment"
+                        description="Allow this merchant to accept credit card bill payments"
+                        value={isCreditCardBillPayment}
+                        onChange={setIsCreditCardBillPayment}
+                      />
+                    </div>
+                  </div>
 
-              {/* ── Summary Card ── */}
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-indigo-800 mb-2">
-                  Summary
-                </h3>
-                <ul className="text-sm text-indigo-700 space-y-1">
-                  <li className="flex items-center gap-2">
-                    <IndianRupee className="h-3.5 w-3.5" />
-                    Lien Amount:{" "}
-                    <span className="font-medium">
-                      ₹{lienAmount !== "" ? Number(lienAmount).toLocaleString("en-IN") : "—"}
-                    </span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    {isPayout ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                    ) : (
-                      <XCircle className="h-3.5 w-3.5 text-red-500" />
-                    )}
-                    Payout:{" "}
-                    <span
-                      className={`font-medium ${
-                        isPayout ? "text-green-700" : "text-red-600"
-                      }`}
-                    >
-                      {isPayout ? "Enabled" : "Disabled"}
-                    </span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    {isCreditCardBillPayment ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                    ) : (
-                      <XCircle className="h-3.5 w-3.5 text-red-500" />
-                    )}
-                    Credit Card Bill Payment:{" "}
-                    <span
-                      className={`font-medium ${
-                        isCreditCardBillPayment
-                          ? "text-green-700"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {isCreditCardBillPayment ? "Enabled" : "Disabled"}
-                    </span>
-                  </li>
-                </ul>
-              </div>
+                  {/* Summary */}
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-indigo-800 mb-2">Summary</h3>
+                    <ul className="text-sm text-indigo-700 space-y-1">
+                      <li className="flex items-center gap-2">
+                        <IndianRupee className="h-3.5 w-3.5" />
+                        Lien Amount:{" "}
+                        <span className="font-medium">
+                          ₹{lienAmount !== "" ? Number(lienAmount).toLocaleString("en-IN") : "—"}
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        {isPayout ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-red-500" />
+                        )}
+                        Payout:{" "}
+                        <span className={`font-medium ${isPayout ? "text-green-700" : "text-red-600"}`}>
+                          {isPayout ? "Enabled" : "Disabled"}
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        {isCreditCardBillPayment ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-red-500" />
+                        )}
+                        Credit Card Bill Payment:{" "}
+                        <span className={`font-medium ${isCreditCardBillPayment ? "text-green-700" : "text-red-600"}`}>
+                          {isCreditCardBillPayment ? "Enabled" : "Disabled"}
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+                </>
+              )}
             </>
           )}
 
@@ -445,7 +514,7 @@ const MerchantSettings = () => {
 
             <button
               type="submit"
-              disabled={submitting || !merchantId}
+              disabled={submitting || !merchantId || settingsLoading}
               className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
@@ -456,7 +525,7 @@ const MerchantSettings = () => {
               ) : (
                 <>
                   <SlidersHorizontal className="h-4 w-4" />
-                  Save Settings
+                  {hasExistingSettings ? "Update Settings" : "Save Settings"}
                 </>
               )}
             </button>
