@@ -91,7 +91,7 @@ const AddBankModal = ({ isOpen, onClose, onBankAdded }) => {
             });
 
             toast.success('Bank details verified and added successfully! ₹1 was debited for verification.');
-            onBankAdded(response.data);
+            onBankAdded(response.data.data);
             resetForm();
             onClose();
 

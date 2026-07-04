@@ -158,7 +158,7 @@ const Payout = () => {
         getCoreRowModel: getCoreRowModel(),
     });
 
-    const canAddBank = banks.length < 3;
+    const canAddBank = banks.length < 20;
 
     return (
         <div className="p-6">
@@ -172,7 +172,7 @@ const Payout = () => {
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                 >
-                    Add Bank {!canAddBank && '(Max 3 reached)'}
+                    Add Bank {!canAddBank && '(Max 20 reached)'}
                 </button>
             </div>
 
