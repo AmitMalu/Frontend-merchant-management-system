@@ -145,20 +145,37 @@ const PayoutTransactionsReport = () => {
     setTimeout(fetchPayoutTransactions, 0);
   };
 
-  /* ===================== EXPORT ===================== */
+  /* ===================== EXPORT — fetch ALL records ===================== */
+
+  const fetchAllForExport = async () => {
+    const params = new URLSearchParams();
+    if (filters.startDate) params.append("startDate", filters.startDate);
+    if (filters.endDate)   params.append("endDate",   filters.endDate);
+    if (filters.service && filters.service !== "BOTH") {
+      params.append("service", filters.service);
+    }
+    // fetch every record in the current date range
+    params.append("page", 0);
+    params.append("size", totalRecords > 0 ? totalRecords : 10000);
+
+    const res = await api.get(
+      `/payment-payout/transactions/report?${params.toString()}`
+    );
+    return res.data.transactions?.content || [];
+  };
 
   const excelTransform = data =>
     data.map(d => ({
-      TransactionId: d.transactionId,
-      TransactionDate: d.transactionDate,
-      BalanceBefore: d.balBeforeTran,
-      Amount: d.amount,
-      BalanceAfter: d.balAfterTran,
-      Remarks: d.remarks,
-      TransactionType: d.transactionType,
+      TransactionId:     d.transactionId,
+      TransactionDate:   d.transactionDate,
+      BalanceBefore:     d.balBeforeTran,
+      Amount:            d.amount,
+      BalanceAfter:      d.balAfterTran,
+      Remarks:           d.remarks,
+      TransactionType:   d.transactionType,
       TransactionStatus: d.tranStatus,
-      MerchantId: d.merchantId,
-      FranchiseId: d.franchiseId
+      MerchantId:        d.merchantId,
+      FranchiseId:       d.franchiseId,
     }));
 
   /* ===================== UI ===================== */
@@ -237,6 +254,7 @@ const PayoutTransactionsReport = () => {
         <div className="p-4 flex justify-end">
           <UniversalExportButtons
             data={data}
+            fetchAllData={fetchAllForExport}
             filename="payout_transactions"
             excelTransform={excelTransform}
           />

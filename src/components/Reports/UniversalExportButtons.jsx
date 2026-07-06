@@ -114,7 +114,7 @@
 // export default UniversalExportButtons;
 
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FileText, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -123,6 +123,7 @@ import autoTable from 'jspdf-autotable';
 
 const UniversalExportButtons = ({
     data,
+    fetchAllData,
     filename = 'report',
     title = 'Report',
     columns,
@@ -131,13 +132,25 @@ const UniversalExportButtons = ({
     summary,
     summaryConfig
 }) => {
-    // In UniversalExportButtons.jsx - Update the Excel export function
-const exportToExcel = () => {
-    const workbook = XLSX.utils.book_new();
+    const [exporting, setExporting] = useState(false);
+
+    // Resolves the full dataset — fetches all records if fetchAllData is provided
+    const resolveData = async () => {
+        if (fetchAllData) {
+            return await fetchAllData();
+        }
+        return data;
+    };
+
+    const exportToExcel = async () => {
+        setExporting(true);
+        try {
+            const allData = await resolveData();
+            const workbook = XLSX.utils.book_new();
 
     // Create main data worksheet
-    const transformedData = excelTransform ? excelTransform(data) : data;
-    const worksheet = XLSX.utils.json_to_sheet(transformedData);
+            const transformedData = excelTransform ? excelTransform(allData) : allData;
+            const worksheet = XLSX.utils.json_to_sheet(transformedData);
 
     // Style the header row
     const headerRange = XLSX.utils.decode_range(worksheet['!ref']);
@@ -227,9 +240,19 @@ const exportToExcel = () => {
     }
 
     XLSX.writeFile(workbook, `${filename}.xlsx`);
-};
+        } catch (err) {
+            console.error('Export failed:', err);
+            alert('Export failed. Please try again.');
+        } finally {
+            setExporting(false);
+        }
+    };
 
-    const exportToPDF = () => {
+    const exportToPDF = async () => {
+        if (!columns) return; // PDF needs columns config
+        setExporting(true);
+        try {
+            const allData = await resolveData();
         // Use landscape orientation for better column handling
         const doc = new jsPDF('landscape', 'mm', 'a4');
 
@@ -359,7 +382,7 @@ const exportToExcel = () => {
         }
 
         // Use custom transform if provided, otherwise use data as-is
-        const transformedData = pdfTransform ? pdfTransform(data) : data;
+        const transformedData = pdfTransform ? pdfTransform(allData) : allData;
 
         // Convert data to table format
         const tableData = transformedData.map(item =>
@@ -455,23 +478,39 @@ const exportToExcel = () => {
         }
 
         doc.save(`${filename}.pdf`);
+        } catch (err) {
+            console.error('PDF export failed:', err);
+            alert('PDF export failed. Please try again.');
+        } finally {
+            setExporting(false);
+        }
     };
 
     return (
         <div className="flex gap-3">
             <button
                 onClick={exportToExcel}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                disabled={exporting}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 font-medium shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-                <FileSpreadsheet className="w-4 h-4" />
-                Export Excel
+                {exporting ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                    <FileSpreadsheet className="w-4 h-4" />
+                )}
+                {exporting ? 'Exporting...' : 'Export Excel'}
             </button>
             <button
                 onClick={exportToPDF}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                disabled={exporting}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition-all duration-200 font-medium shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-                <FileText className="w-4 h-4" />
-                Export PDF
+                {exporting ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                    <FileText className="w-4 h-4" />
+                )}
+                {exporting ? 'Exporting...' : 'Export PDF'}
             </button>
         </div>
     );

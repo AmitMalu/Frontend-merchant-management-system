@@ -115,6 +115,8 @@ const PaymentVendorsForm = ({ isOpen, onClose, defaultValues = null, onSubmit })
                                 })
                             }
                             className="text-sm"
+                            maxMenuHeight={180}
+                            menuPlacement="auto"
                         />
 
                         {errors.supportedModeIds && (
