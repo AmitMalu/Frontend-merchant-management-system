@@ -191,6 +191,10 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
                 header: 'Transaction ID',
                 cell: info => <span className="font-mono text-xs text-gray-900">{info.getValue()}</span>
             }),
+            txnDate: columnHelper.accessor('txnDate', {
+                header: 'Date',
+                cell: info => <span className="text-xs text-gray-700">{new Date(info.getValue()).toLocaleDateString()}</span>
+            }),
             actionOnBalance: columnHelper.accessor('actionOnBalance', {
                 header: 'Action',
                 cell: info => (
@@ -198,14 +202,6 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
                         {info.getValue()}
                     </span>
                 )
-            }),
-            txnDate: columnHelper.accessor('txnDate', {
-                header: 'Date',
-                cell: info => <span className="text-xs text-gray-700">{new Date(info.getValue()).toLocaleDateString()}</span>
-            }),
-            settleDate: columnHelper.accessor('settleDate', {
-                header: 'Settled On',
-                cell: info => <span className="text-xs text-gray-600">{new Date(info.getValue()).toLocaleDateString()}</span>
             }),
             service: columnHelper.accessor('service', {
                 header: 'Service',
@@ -219,17 +215,21 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
                     </span>
                 )
             }),
-            txnAmount: columnHelper.accessor('txnAmount', {
-                header: 'Transaction Amount',
-                cell: info => <span className="font-semibold text-xs text-blue-600">₹{(info.getValue() || 0).toLocaleString()}</span>
+            balBeforeTran: columnHelper.accessor('balBeforeTran', {
+                header: 'Bal. Before',
+                cell: info => <span className="font-semibold text-xs text-gray-600">₹{(info.getValue() || 0).toLocaleString()}</span>
             }),
             settleAmount: columnHelper.accessor('settleAmount', {
                 header: 'Net Amount',
                 cell: info => <span className="font-semibold text-xs text-green-600">₹{(info.getValue() || 0).toLocaleString()}</span>
             }),
-            balBeforeTran: columnHelper.accessor('balBeforeTran', {
-                header: 'Bal. Before',
-                cell: info => <span className="font-semibold text-xs text-gray-600">₹{(info.getValue() || 0).toLocaleString()}</span>
+            systemFee: columnHelper.accessor('systemFee', {
+                header: 'System Fee',
+                cell: info => <span className="font-semibold text-xs text-red-600">₹{(info.getValue() || 0).toLocaleString()}</span>
+            }),
+            txnAmount: columnHelper.accessor('txnAmount', {
+                header: 'Transaction Amount',
+                cell: info => <span className="font-semibold text-xs text-blue-600">₹{(info.getValue() || 0).toLocaleString()}</span>
             }),
             balAfterTran: columnHelper.accessor('balAfterTran', {
                 header: 'Bal. After',
@@ -244,13 +244,21 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
                     );
                 }
             }),
-            systemFee: columnHelper.accessor('systemFee', {
-                header: 'System Fee',
-                cell: info => <span className="font-semibold text-xs text-red-600">₹{(info.getValue() || 0).toLocaleString()}</span>
-            }),
             commissionAmount: columnHelper.accessor('commissionAmount', {
                 header: 'Commission',
                 cell: info => <span className="font-semibold text-xs text-orange-600">₹{(info.getValue() || 0).toLocaleString()}</span>
+            }),
+            state: columnHelper.accessor('state', {
+                header: 'State',
+                cell: info => <span className="text-xs text-gray-600">{info.getValue() || '-'}</span>
+            }),
+            settleDate: columnHelper.accessor('settleDate', {
+                header: 'Settled On',
+                cell: info => <span className="text-xs text-gray-600">{new Date(info.getValue()).toLocaleDateString()}</span>
+            }),
+            merchantName: columnHelper.accessor('merchantName', {
+                header: 'Merchant',
+                cell: info => <span className="text-xs text-gray-900 font-medium">{info.getValue() || '-'}</span>
             }),
             franchiseName: columnHelper.accessor('franchiseName', {
                 header: 'Franchise',
@@ -276,14 +284,6 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
                 header: 'Card Class',
                 cell: info => <span className="text-xs text-gray-600">{info.getValue() || '-'}</span>
             }),
-            merchantName: columnHelper.accessor('merchantName', {
-                header: 'Merchant',
-                cell: info => <span className="text-xs text-gray-900 font-medium">{info.getValue() || '-'}</span>
-            }),
-            state: columnHelper.accessor('state', {
-                header: 'State',
-                cell: info => <span className="text-xs text-gray-600">{info.getValue() || '-'}</span>
-            }),
             settlementPercentage: columnHelper.accessor('settlementPercentage', {
                 header: 'Settlement Rate',
                 cell: info => <span className="text-xs text-indigo-600">{info.getValue() || 0}%</span>
@@ -304,10 +304,10 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
     }, []);
 
     const columnPriority = [
-        'customTxnId', 'txnId', 'actionOnBalance', 'txnDate', 'settleDate', 'service', 'remarks', 'txnAmount', 'settleAmount',
-        'balBeforeTran', 'balAfterTran',
-        'systemFee', 'commissionAmount', 'merchantName', 'franchiseName', 'brandType',
-        'cardType', 'authCode', 'tid', 'cardClassification', 'state',
+        'customTxnId', 'txnId', 'txnDate', 'actionOnBalance', 'service', 'remarks',
+        'balBeforeTran', 'settleAmount', 'systemFee', 'txnAmount', 'balAfterTran',
+        'commissionAmount', 'state', 'settleDate', 'merchantName', 'franchiseName', 'authCode',
+        'tid', 'brandType', 'cardType', 'cardClassification',
         'settlementPercentage', 'merchantRate', 'franchiseRate', 'commissionRate'
     ];
 
@@ -347,25 +347,25 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
         const fieldMapping = {
             customTxnId: { header: 'System ID', format: val => val },
             txnId: { header: 'Transaction ID', format: val => val },
-            actionOnBalance: { header: 'Action', format: val => val },
             txnDate: { header: 'Transaction Date', format: val => new Date(val).toLocaleString() },
-            settleDate: { header: 'Settled On', format: val => new Date(val).toLocaleString() },
+            actionOnBalance: { header: 'Action', format: val => val },
             service: { header: 'Service', format: val => val },
             remarks: { header: 'Remarks', format: val => val || '-' },
-            txnAmount: { header: 'Transaction Amount (₹)', format: val => val },
-            settleAmount: { header: 'Net Amount (₹)', format: val => val },
             balBeforeTran: { header: 'Balance Before (₹)', format: val => val },
-            balAfterTran: { header: 'Balance After (₹)', format: val => val },
+            settleAmount: { header: 'Net Amount (₹)', format: val => val },
             systemFee: { header: 'System Fee (₹)', format: val => val },
+            txnAmount: { header: 'Transaction Amount (₹)', format: val => val },
+            balAfterTran: { header: 'Balance After (₹)', format: val => val },
             commissionAmount: { header: 'Commission (₹)', format: val => val },
+            state: { header: 'State', format: val => val || '-' },
+            settleDate: { header: 'Settled On', format: val => new Date(val).toLocaleString() },
+            merchantName: { header: 'Merchant Name', format: val => val || '-' },
+            franchiseName: { header: 'Franchise Name', format: val => val || '-' },
             authCode: { header: 'Auth Code', format: val => val || '-' },
             tid: { header: 'TID', format: val => val || '-' },
             brandType: { header: 'Brand Type', format: val => val || '-' },
             cardType: { header: 'Card Type', format: val => val || '-' },
             cardClassification: { header: 'Card Classification', format: val => val || '-' },
-            merchantName: { header: 'Merchant Name', format: val => val || '-' },
-            franchiseName: { header: 'Franchise Name', format: val => val || '-' },
-            state: { header: 'State', format: val => val || '-' },
             settlementPercentage: { header: 'Settlement Rate (%)', format: val => val },
             merchantRate: { header: 'Merchant Rate (%)', format: val => val },
             franchiseRate: { header: 'Franchise Rate (%)', format: val => val },
@@ -383,38 +383,43 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
     const excelTransform = (data) => {
         return data.map(transaction => {
             const row = {};
+
             exportConfig.keys.forEach(key => {
                 const fieldMapping = {
                     customTxnId: { header: 'System ID', format: val => val },
                     txnId: { header: 'Transaction ID', format: val => val },
+                    txnDate: { header: 'Transaction Date', format: val => val ? new Date(val).toLocaleString() : '-' },
                     actionOnBalance: { header: 'Action', format: val => val },
-                    txnDate: { header: 'Transaction Date', format: val => new Date(val).toLocaleString() },
-                    settleDate: { header: 'Settled On', format: val => new Date(val).toLocaleString() },
                     service: { header: 'Service', format: val => val },
                     remarks: { header: 'Remarks', format: val => val || '-' },
-                    txnAmount: { header: 'Transaction Amount', format: val => val },
-                    settleAmount: { header: 'Net Amount', format: val => val },
                     balBeforeTran: { header: 'Balance Before (₹)', format: val => val },
+                    settleAmount: { header: 'Net Amount (₹)', format: val => val },
+                    systemFee: { header: 'System Fee (₹)', format: val => val },
+                    txnAmount: { header: 'Transaction Amount (₹)', format: val => val },
                     balAfterTran: { header: 'Balance After (₹)', format: val => val },
-                    systemFee: { header: 'System Fee', format: val => val },
-                    commissionAmount: { header: 'Commission', format: val => val },
+                    commissionAmount: { header: 'Commission (₹)', format: val => val },
+                    state: { header: 'State', format: val => val || '-' },
+                    settleDate: { header: 'Settled On', format: val => val ? new Date(val).toLocaleString() : '-' },
+                    merchantName: { header: 'Merchant Name', format: val => val || '-' },
+                    franchiseName: { header: 'Franchise Name', format: val => val || '-' },
                     authCode: { header: 'Auth Code', format: val => val || '-' },
                     tid: { header: 'TID', format: val => val || '-' },
                     brandType: { header: 'Brand Type', format: val => val || '-' },
                     cardType: { header: 'Card Type', format: val => val || '-' },
                     cardClassification: { header: 'Card Classification', format: val => val || '-' },
-                    merchantName: { header: 'Merchant Name', format: val => val || '-' },
-                    franchiseName: { header: 'Franchise Name', format: val => val || '-' },
-                    state: { header: 'State', format: val => val || '-' },
-                    settlementPercentage: { header: 'Settlement Rate', format: val => `${val || 0}%` },
-                    merchantRate: { header: 'Merchant Rate', format: val => `${val || 0}%` },
-                    franchiseRate: { header: 'Franchise Rate', format: val => `${val || 0}%` },
-                    commissionRate: { header: 'Commission Rate', format: val => `${val || 0}%` }
+                    settlementPercentage: { header: 'Settlement Rate (%)', format: val => `${val || 0}%` },
+                    merchantRate: { header: 'Merchant Rate (%)', format: val => `${val || 0}%` },
+                    franchiseRate: { header: 'Franchise Rate (%)', format: val => `${val || 0}%` },
+                    commissionRate: { header: 'Commission Rate (%)', format: val => `${val || 0}%` }
                 };
 
                 const config = fieldMapping[key];
-                row[config.header] = config.format(transaction[key]);
+
+                if (config) {
+                    row[config.header] = config.format(transaction[key]);
+                }
             });
+
             return row;
         });
     };
