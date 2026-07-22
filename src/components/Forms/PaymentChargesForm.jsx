@@ -162,6 +162,8 @@ const PaymentChargesForm = ({ isOpen, onClose, defaultValues = null, onSubmit })
                                 placeholder={modes.length === 0 ? "No modes available" : "Select mode"}
                                 isClearable
                                 className="text-sm"
+                                maxMenuHeight={180}
+                                menuPlacement="auto"
                                 styles={{
                                     control: (base) => ({
                                         ...base,

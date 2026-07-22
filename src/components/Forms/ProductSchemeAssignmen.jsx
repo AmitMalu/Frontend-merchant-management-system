@@ -438,9 +438,24 @@ const ProductAssignmentFormModal = ({ onCancel, onSubmit, initialData = null, is
             }))
 
             if (isEdit && initialData?.id) {
-                await api.put(`/outward-schemes/${initialData.id}`, payload)
+                // PUT expects a single DTO, not an array
+                const singlePayload = {
+                    customerType: data.customerType,
+                    franchiseId:
+                        data.customerType === 'FRANCHISE'
+                            ? Number(data.franchiseId)
+                            : null,
+                    merchantId: Number(data.merchantIds[0]),
+                    productId: Number(data.productId),
+                    schemeId: Number(data.schemeId),
+                    effectiveDate: data.effectiveDate,
+                    expiryDate: data.expiryDate || null,
+                    remarks: data.remarks || null
+                }
+                await api.put(`/outward-schemes/${initialData.id}`, singlePayload)
                 toast.success("Scheme Assignment Successfully Updated")
             } else {
+                // POST creates one record per merchant (array)
                 await api.post('/outward-schemes', payload)
                 toast.success("Scheme Assigned Successfully")
             }
@@ -466,15 +481,8 @@ const ProductAssignmentFormModal = ({ onCancel, onSubmit, initialData = null, is
         onCancel()
     }
 
-    // Calculate if we're ready to show the form
-    const isLoadingInitialData = isEdit && (
-        loadingCustomers ||
-        loadingProducts ||
-        loadingSchemes ||
-        (watchedFields[0] && getCustomerOptions().length === 0) ||
-        (watchedFields[1] && getProductOptions().length === 0) ||
-        (watchedFields[2] && getSchemeOptions().length === 0)
-    )
+    // Show loading state only while actual API calls are in-flight
+    const isLoadingInitialData = isEdit && !dataInitialized
 
     // Show loading state
     if (isLoadingInitialData) {
