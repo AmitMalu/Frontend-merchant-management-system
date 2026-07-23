@@ -433,7 +433,8 @@ const MERCHANT_MENU_CONFIG = [
     icon: BarChart3,
     iconColor: '',
     children: [
-      { title: 'Merchant Transaction Reports', path: '/dashboard/reports/merchant-transactions', icon: BarChart3 }
+      { title: 'Merchant Transaction Reports', path: '/dashboard/reports/merchant-transactions', icon: BarChart3 },
+      { title: 'Payout Transaction Reports', path: '/dashboard/reports/payout-transaction', icon: BarChart3 }
     ]
   },
   {

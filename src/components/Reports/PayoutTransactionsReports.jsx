@@ -22,6 +22,11 @@ const PayoutTransactionsReport = () => {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
 
+  // Detect if the logged-in user is a merchant and grab their ID
+  const userType = localStorage.getItem('userType')?.toLowerCase();
+  const isMerchant = userType === 'merchant';
+  const merchantId = localStorage.getItem('customerId');
+
   /* ===================== DEFAULT FILTER ===================== */
 
   const getLast7Days = () => {
@@ -49,6 +54,10 @@ const PayoutTransactionsReport = () => {
       if (filters.endDate) params.append("endDate", filters.endDate);
       if (filters.service && filters.service !== "BOTH") {
         params.append("service", filters.service);
+      }
+      // Always send merchantId when logged in as merchant
+      if (isMerchant && merchantId) {
+        params.append("merchantId", merchantId);
       }
 
       params.append("page", page);
@@ -91,19 +100,28 @@ const PayoutTransactionsReport = () => {
     { accessorKey: "charge", header: "Charge" },
     { accessorKey: "balAfterTran", header: "Balance After" },
     { accessorKey: "remarks", header: "Remarks" },
+    { accessorKey: "bankRefId", header: "Bank Ref ID",
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs text-indigo-700">
+          {getValue() ?? "-"}
+        </span>
+      )
+    },
     { accessorKey: "transactionType", header: "Transaction Type" },
     { accessorKey: "tranStatus", header: "Transaction Status" },
-    {
-      accessorKey: "merchantId",
-      header: "Merchant ID",
-      cell: ({ getValue }) => getValue() ?? "-"
-    },
-    {
-      accessorKey: "franchiseId",
-      header: "Franchise ID",
-      cell: ({ getValue }) => getValue() ?? "-"
-    }
-  ], []);
+    ...(!isMerchant ? [
+      {
+        accessorKey: "merchantId",
+        header: "Merchant ID",
+        cell: ({ getValue }) => getValue() ?? "-"
+      },
+      {
+        accessorKey: "franchiseId",
+        header: "Franchise ID",
+        cell: ({ getValue }) => getValue() ?? "-"
+      }
+    ] : [])
+  ], [isMerchant]);
 
   /* ===================== TABLE ===================== */
 
@@ -155,7 +173,9 @@ const PayoutTransactionsReport = () => {
     if (filters.service && filters.service !== "BOTH") {
       params.append("service", filters.service);
     }
-    // fetch every record in the current date range
+    if (isMerchant && merchantId) {
+      params.append("merchantId", merchantId);
+    }
     params.append("page", 0);
     params.append("size", totalRecords > 0 ? totalRecords : 10000);
 
@@ -174,10 +194,14 @@ const PayoutTransactionsReport = () => {
       Charge:            d.charge,
       BalanceAfter:      d.balAfterTran,
       Remarks:           d.remarks,
+      BankRefId:         d.bankRefId ?? "-",
       TransactionType:   d.transactionType,
       TransactionStatus: d.tranStatus,
-      MerchantId:        d.merchantId,
-      FranchiseId:       d.franchiseId,
+      // Only include for admin — merchant already knows their own ID
+      ...(!isMerchant && {
+        MerchantId:  d.merchantId,
+        FranchiseId: d.franchiseId,
+      }),
     }));
 
   /* ===================== UI ===================== */
