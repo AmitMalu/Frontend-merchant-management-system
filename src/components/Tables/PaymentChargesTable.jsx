@@ -57,6 +57,19 @@ const PaymentChargesTable = () => {
         setOpenForm(true);
     };
 
+    const handleView = async (row) => {
+        try {
+            // Fetch full detail so slabs and scope fields are always present
+            const res = await api.get(`/payment-charges/${row.id}`);
+            const detail = res.data?.data ?? res.data;
+            setViewing(detail);
+        } catch {
+            // Fall back to list row data if detail endpoint fails
+            setViewing(row);
+        }
+        setOpenView(true);
+    };
+
     const handleSubmit = async (payload) => {
         try {
             if (editing) {
@@ -96,9 +109,52 @@ const PaymentChargesTable = () => {
         {
             id: "mode",
             header: "Mode",
-            cell: ({ row }) => (
-                <div className="font-semibold text-gray-800">{row.original.mode?.code}</div>
-            )
+            cell: ({ row }) => {
+                // Support both old { mode: { code } } and new flat { modeCode }
+                const code = row.original.modeCode ?? row.original.mode?.code ?? "—";
+                return <div className="font-semibold text-gray-800">{code}</div>;
+            }
+        },
+
+        {
+            id: "chargeScope",
+            header: "Scope",
+            cell: ({ row }) => {
+                const scope = row.original.chargeScope;
+                const colors = {
+                    GLOBAL:             "bg-blue-100 text-blue-700",
+                    DIRECT_MERCHANT:    "bg-green-100 text-green-700",
+                    FRANCHISE:          "bg-purple-100 text-purple-700",
+                    FRANCHISE_MERCHANT: "bg-orange-100 text-orange-700",
+                };
+                const labels = {
+                    GLOBAL:             "Global",
+                    DIRECT_MERCHANT:    "Direct Merchant",
+                    FRANCHISE:          "Franchise",
+                    FRANCHISE_MERCHANT: "Franchise Merchant",
+                };
+                if (!scope) return <span className="text-gray-400 text-xs">—</span>;
+                return (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${colors[scope] ?? "bg-gray-100 text-gray-600"}`}>
+                        {labels[scope] ?? scope}
+                    </span>
+                );
+            }
+        },
+
+        {
+            id: "scopeTarget",
+            header: "Applies To",
+            cell: ({ row }) => {
+                const { chargeScope, merchantName, franchiseName } = row.original;
+                if (chargeScope === "GLOBAL")          return <span className="text-xs text-gray-500">All</span>;
+                if (chargeScope === "DIRECT_MERCHANT") return <span className="text-xs">{merchantName  ?? "—"}</span>;
+                if (chargeScope === "FRANCHISE")       return <span className="text-xs">{franchiseName ?? "—"}</span>;
+                if (chargeScope === "FRANCHISE_MERCHANT") return (
+                    <span className="text-xs">{franchiseName ?? "—"} / {merchantName ?? "—"}</span>
+                );
+                return "—";
+            }
         },
 
         {
@@ -142,7 +198,7 @@ const PaymentChargesTable = () => {
             cell: ({ row }) => (
                 <div className="flex gap-2">
                     <button
-                        onClick={() => { setViewing(row.original); setOpenView(true); }}
+                        onClick={() => handleView(row.original)}
                         className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                     >
                         <Eye size={16} />
@@ -199,10 +255,10 @@ const PaymentChargesTable = () => {
 
             <div className="bg-white rounded-lg shadow-sm">
                 <TableHeader
-                    title="Global Payment Charges"
+                    title="Payment Charges"
                     searchValue={globalFilter}
                     onSearchChange={setGlobalFilter}
-                    searchPlaceholder="Search mode..."
+                    searchPlaceholder="Search mode, scope..."
                 />
                 <Table
                     table={table}
