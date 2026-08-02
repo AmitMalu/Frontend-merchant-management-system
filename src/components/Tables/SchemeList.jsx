@@ -2,19 +2,15 @@ import { useState, useMemo, useEffect } from 'react'
 import {
     useReactTable,
     getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    getFilteredRowModel,
     flexRender
 } from '@tanstack/react-table'
 
-import { Plus, Edit, Trash2, Eye, ChevronLeft, ChevronRight, X, Copy, DollarSign, IndianRupee, Search, Package, Users, CreditCard, Building2 } from 'lucide-react'
+import { Plus, Edit, Eye, ChevronLeft, ChevronRight, X, Copy, IndianRupee, Search, Package, Users, CreditCard, Building2 } from 'lucide-react'
 
 import { toast } from 'react-toastify'
 
 import PricingSchemeFormModal from '../Forms/PricingForm'
 import schemeApi from '../../constants/API/schemeApi'
-import { set } from 'react-hook-form'
 
 const SchemeList = () => {
     const [schemes, setSchemes] = useState([])
@@ -84,13 +80,44 @@ const SchemeList = () => {
             ),
         },
         {
-            accessorKey: 'productCategoryName',
-            header: 'Product Category',
-            cell: ({ row }) => (
-                <div className="text-gray-900">
-                    {row.getValue('productCategoryName')}
-                </div>
-            ),
+            id: 'productCategories',
+            header: 'Product Types',
+            cell: ({ row }) => {
+
+                const cardRates = row.original.cardRates || []
+
+                const productNames = [
+                    ...new Set(
+                        cardRates
+                            .map(rate =>
+                                rate.productCategoryName ||
+                                rate.productCategory?.categoryName
+                            )
+                            .filter(Boolean)
+                    )
+                ]
+
+                if (productNames.length === 0) {
+                    return (
+                        <span className="text-gray-400">
+                            No products
+                        </span>
+                    )
+                }
+
+                return (
+                    <div className="flex flex-wrap gap-1 max-w-xs">
+                        {productNames.map(productName => (
+                            <span
+                                key={productName}
+                                className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
+                            >
+                                {productName}
+                            </span>
+                        ))}
+                    </div>
+                )
+            },
         },
         {
             accessorKey: 'rentalByMonth',
@@ -104,25 +131,53 @@ const SchemeList = () => {
         {
             accessorKey: 'cardRates',
             header: 'Card Types & Rates',
+            size: 280,
             cell: ({ row }) => {
-                const cardRates = row.getValue('cardRates') || []
-                const customerType = row.getValue('customerType')
-                const maxVisible = 2
+
+                const cardRates = row.original.cardRates || []
+                const customerType = row.original.customerType
+                const maxVisible = 3
 
                 return (
-                    <div className="text-xs text-gray-600 max-w-xs">
-                        {cardRates.slice(0, maxVisible).map((rate, index) => (
-                            <div key={index} className="mb-1">
-                                <span className="font-medium text-gray-800">{rate.cardName}:</span>
-                                {customerType === 'franchise' ? (
-                                    <span className="ml-1">
-                                        F: {rate.franchiseRate}% | M: {rate.merchantRate}%
-                                    </span>
-                                ) : (
-                                    <span className="ml-1">{rate.rate}%</span>
-                                )}
-                            </div>
-                        ))}
+                    <div className="text-xs text-gray-600 w-64">
+
+                        {cardRates
+                            .slice(0, maxVisible)
+                            .map((rate, index) => {
+
+                                const productName =
+                                    rate.productCategoryName ||
+                                    rate.productCategory?.categoryName ||
+                                    'Unknown Product'
+
+                                return (
+                                    <div
+                                        key={rate.id || index}
+                                        className="mb-1"
+                                    >
+                                        <span className="font-medium text-blue-700">
+                                            {productName}
+                                        </span>
+
+                                        <span className="mx-1">-</span>
+
+                                        <span className="font-medium text-gray-800">
+                                            {rate.cardName}:
+                                        </span>
+
+                                        {customerType === 'franchise' ? (
+                                            <span className="ml-1">
+                                                F: {rate.franchiseRate}% | M: {rate.merchantRate}%
+                                            </span>
+                                        ) : (
+                                            <span className="ml-1">
+                                                M: {rate.merchantRate}%
+                                            </span>
+                                        )}
+                                    </div>
+                                )
+                            })}
+
                         {cardRates.length > maxVisible && (
                             <div className="text-gray-500 italic">
                                 ...and {cardRates.length - maxVisible} more
@@ -205,14 +260,53 @@ const SchemeList = () => {
         setIsModalOpen(true)
     }
 
-    const handleEdit = (scheme) => {
-        setEditingScheme(scheme)
-        setIsModalOpen(true)
+    const handleEdit = async (scheme) => {
+
+        try {
+            setLoading(true)
+
+            const response =
+                await schemeApi.getSchemeById(scheme.id)
+
+            setEditingScheme(response.data)
+            setIsReuse(false)
+            setIsModalOpen(true)
+
+        } catch (error) {
+
+            const errorMessage =
+                error?.response?.data?.error ||
+                'Failed to load pricing scheme details'
+
+            toast.error(errorMessage)
+
+        } finally {
+            setLoading(false)
+        }
     }
-    const handleReuse = (scheme) => {
-        setEditingScheme(scheme)
-        setIsReuse(true) // Set to true for reuse mode
-        setIsModalOpen(true)
+    const handleReuse = async (scheme) => {
+
+        try {
+            setLoading(true)
+
+            const response =
+                await schemeApi.getSchemeById(scheme.id)
+
+            setEditingScheme(response.data)
+            setIsReuse(true)
+            setIsModalOpen(true)
+
+        } catch (error) {
+
+            const errorMessage =
+                error?.response?.data?.error ||
+                'Failed to load pricing scheme details'
+
+            toast.error(errorMessage)
+
+        } finally {
+            setLoading(false)
+        }
     }
 
 
@@ -292,6 +386,36 @@ const SchemeList = () => {
         setIsModalOpen(false)
         setEditingScheme(null)
         setIsReuse(false) // Reset reuse state on cancel
+    }
+
+    const groupCardRatesByProduct = (cardRates = []) => {
+
+        return cardRates.reduce((groups, rate) => {
+
+            const productCategoryId =
+                rate.productCategoryId ||
+                rate.productCategory?.id ||
+                'unknown'
+
+            const productName =
+                rate.productCategoryName ||
+                rate.productCategory?.categoryName ||
+                'Unknown Product'
+
+            const key = String(productCategoryId)
+
+            if (!groups[key]) {
+                groups[key] = {
+                    productCategoryId,
+                    productName,
+                    cardRates: []
+                }
+            }
+
+            groups[key].cardRates.push(rate)
+
+            return groups
+        }, {})
     }
 
     // Calculate stats
@@ -416,7 +540,11 @@ const SchemeList = () => {
                                         {headerGroup.headers.map(header => (
                                             <th
                                                 key={header.id}
-                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                                                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors ${
+                                                    header.column.id === 'actions'
+                                                        ? 'sticky right-0 bg-gray-50 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]'
+                                                        : ''
+                                                }`}
                                                 onClick={header.column.getToggleSortingHandler()}
                                             >
                                                 <div className="flex items-center space-x-1">
@@ -451,7 +579,11 @@ const SchemeList = () => {
                                     table.getRowModel().rows.map(row => (
                                         <tr key={row.id} className="hover:bg-gray-50 transition-colors">
                                             {row.getVisibleCells().map(cell => (
-                                                <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
+                                                <td key={cell.id} className={`px-6 py-4 ${
+                                                    cell.column.id === 'actions'
+                                                        ? 'whitespace-nowrap sticky right-0 bg-white shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]'
+                                                        : 'align-top'
+                                                }`}>
                                                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                                 </td>
                                             ))}
@@ -546,19 +678,75 @@ const SchemeList = () => {
                             </div>
 
                             <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Card Rates</label>
-                                <div className="space-y-2">
-                                    {viewingScheme.cardRates?.map((rate, index) => (
-                                        <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                            <span className="font-medium">{rate.cardName}</span>
-                                            <div className="text-sm text-gray-600">
-                                                {viewingScheme.customerType === 'franchise'
-                                                    ? `Franchise: ${rate.franchiseRate}% | Merchant: ${rate.merchantRate}%`
-                                                    : `Rate: ${rate.rate}%`
-                                                }
+                                <label className="block text-sm font-medium text-gray-700 mb-3">
+                                    Product and Card Rates
+                                </label>
+
+                                <div className="space-y-4">
+
+                                    {Object.values(
+                                        groupCardRatesByProduct(
+                                            viewingScheme.cardRates || []
+                                        )
+                                    ).map(productGroup => (
+
+                                        <div
+                                            key={productGroup.productCategoryId}
+                                            className="border border-gray-200 rounded-lg overflow-hidden"
+                                        >
+
+                                            <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                                                <h3 className="font-semibold text-blue-800">
+                                                    {productGroup.productName}
+                                                </h3>
+
+                                                <p className="text-xs text-blue-600">
+                                                    {productGroup.cardRates.length} card type(s)
+                                                </p>
+                                            </div>
+
+                                            <div className="divide-y divide-gray-100">
+
+                                                {productGroup.cardRates.map((rate, index) => (
+
+                                                    <div
+                                                        key={rate.id || index}
+                                                        className="flex justify-between items-center p-3 bg-white"
+                                                    >
+
+                                                        <div>
+                                                            <span className="font-medium">
+                                                                {rate.cardName}
+                                                            </span>
+
+                                                            {rate.category && (
+                                                                <span className="ml-2 text-xs text-gray-500">
+                                                                    ({rate.category})
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="text-sm text-gray-600">
+
+                                                            {viewingScheme.customerType === 'franchise'
+                                                                ? `Franchise: ${rate.franchiseRate}% | Merchant: ${rate.merchantRate}%`
+                                                                : `Merchant: ${rate.merchantRate}%`
+                                                            }
+
+                                                        </div>
+                                                    </div>
+                                                ))}
+
                                             </div>
                                         </div>
-                                    )) || <p className="text-gray-500">No card rates configured</p>}
+                                    ))}
+
+                                    {(!viewingScheme.cardRates ||
+                                        viewingScheme.cardRates.length === 0) && (
+                                            <p className="text-gray-500">
+                                                No card rates configured
+                                            </p>
+                                        )}
                                 </div>
                             </div>
 
