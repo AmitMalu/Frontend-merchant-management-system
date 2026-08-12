@@ -407,7 +407,7 @@ const MERCHANT_MENU_CONFIG = [
     ]
   },
   {
-    title: 'Bill Payment',
+    title: 'Bharat Bill',
     key: MENU_KEYS.BILL_PAYMENT,
     path: '/dashboard/credit-card-bill-payment',
     icon: Banknote,
