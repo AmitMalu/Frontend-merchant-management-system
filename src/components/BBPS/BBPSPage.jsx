@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { MdChevronLeft, MdPayments } from "react-icons/md";
+import { MdChevronLeft, MdPayments, MdInfoOutline } from "react-icons/md";
 import { getBbpsIcon } from "./bbpsIcons";
-import { BBPS_SERVICES } from "./bbpsServices";
+import { BBPS_SERVICES, fetchBillerInfo, mapDataTypeToInputType } from "./bbpsServices";
 import api from "../../constants/API/axiosInstance";
 import { toast } from "react-toastify";
 
@@ -120,23 +120,18 @@ const BBPSServiceGrid = ({ onSelectService }) => {
 const BBPSServiceForm = ({ service, onBack }) => {
   // service = { serviceName, serviceKey? }
 
-  const [providers, setProviders]       = useState([]);
-  const [loadingProviders, setLoadingProviders] = useState(true);
-  const [selectedProvider, setSelectedProvider] = useState(null); // full provider object
+  const [providers, setProviders]               = useState([]);
+  const [loadingProviders, setLoadingProviders]   = useState(true);
   const [selectedProviderId, setSelectedProviderId] = useState("");
 
-  // Additional dynamic fields (non-provider) from static catalogue
-  // Find matching static definition by service name
-  const staticDef = BBPS_SERVICES.find(
-    (s) =>
-      s.label.toLowerCase() === service.serviceName?.toLowerCase() ||
-      s.id === service.serviceKey
-  );
-  const extraFields = staticDef?.fields?.filter((f) => f.name !== "provider") || [];
+  // Biller info fetched after provider selection
+  const [billerInfo, setBillerInfo]             = useState(null);   // full biller object
+  const [loadingBiller, setLoadingBiller]       = useState(false);
 
-  const [fieldValues, setFieldValues] = useState(
-    Object.fromEntries(extraFields.map((f) => [f.name, ""]))
-  );
+  // Dynamic input fields derived from billerInputParams
+  const [dynamicFields, setDynamicFields]       = useState([]);     // parsed param objects
+  const [fieldValues, setFieldValues]           = useState({});     // { paramName: value }
+  const [customerMobile, setCustomerMobile]     = useState("");
 
   const [fetching, setFetching]   = useState(false);
   const [billData, setBillData]   = useState(null);
@@ -148,14 +143,13 @@ const BBPSServiceForm = ({ service, onBack }) => {
 
   // ── Fetch providers when screen loads ──────────────────────────────────────
   useEffect(() => {
-    const fetchProviders = async () => {
+    const loadProviders = async () => {
       setLoadingProviders(true);
       try {
         const res = await api.post("/billpay/config/providers", {
           vendorName:  VENDOR_NAME,
           serviceName: service.serviceName,
         });
-        // Response: { statusCode, message, vendorName, serviceName, data: [...] }
         setProviders(res.data?.data || []);
       } catch (err) {
         console.error("Failed to load providers:", err);
@@ -165,44 +159,86 @@ const BBPSServiceForm = ({ service, onBack }) => {
         setLoadingProviders(false);
       }
     };
-    fetchProviders();
+    loadProviders();
   }, [service.serviceName]);
 
-  const handleProviderChange = (providerId) => {
+  // ── Fetch biller info whenever a provider is chosen ────────────────────────
+  const handleProviderChange = async (providerId) => {
     setSelectedProviderId(providerId);
-    const found = providers.find(
-      (p) => String(p.providerId ?? p.id ?? p.providerName) === String(providerId)
-    );
-    setSelectedProvider(found || null);
+    setBillerInfo(null);
+    setDynamicFields([]);
+    setFieldValues({});
+    setBillData(null);
+
+    if (!providerId) return;
+
+    setLoadingBiller(true);
+    try {
+      const biller = await fetchBillerInfo(providerId);
+      if (!biller) {
+        toast.error("No biller info found for this provider.");
+        return;
+      }
+      setBillerInfo(biller);
+
+      // Parse billerInputParams → flat list of param objects
+      const params =
+        biller.billerInputParams?.[0]?.paramsList ||
+        biller.billerInputParams?.paramsList ||
+        [];
+      setDynamicFields(params);
+      // Initialise field values to empty strings
+      setFieldValues(Object.fromEntries(params.map((p) => [p.paramName, ""])));
+    } catch (err) {
+      console.error("Failed to fetch biller info:", err);
+      toast.error("Failed to load biller details. Please try again.");
+    } finally {
+      setLoadingBiller(false);
+    }
+  };
+
+  const handleFieldChange = (paramName, value) => {
+    setFieldValues((prev) => ({ ...prev, [paramName]: value }));
     setBillData(null);
   };
 
-  const handleFieldChange = (name, value) => {
-    setFieldValues((prev) => ({ ...prev, [name]: value }));
-    setBillData(null);
-  };
-
+  // ── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
     if (!selectedProviderId) {
       toast.error("Please select a provider");
       return false;
     }
-    for (const field of extraFields) {
-      if (field.required && !fieldValues[field.name]?.trim()) {
-        toast.error(`${field.label} is required`);
+    if (!customerMobile.trim() || !/^\d{10}$/.test(customerMobile.trim())) {
+      toast.error("Enter a valid 10-digit mobile number");
+      return false;
+    }
+    for (const field of dynamicFields) {
+      const val = fieldValues[field.paramName]?.trim() || "";
+      // Skip optional fields
+      if (field.isOptional === "true" || field.visibility === "false") continue;
+      if (!val) {
+        toast.error(`${field.paramName} is required`);
+        return false;
+      }
+      if (field.minLength && val.length < Number(field.minLength)) {
+        toast.error(`${field.paramName} must be at least ${field.minLength} characters`);
+        return false;
+      }
+      if (field.maxLength && val.length > Number(field.maxLength)) {
+        toast.error(`${field.paramName} must be at most ${field.maxLength} characters`);
         return false;
       }
     }
     return true;
   };
 
-  // Simulated fetch — biller info API to be wired when live credentials arrive
+  // ── Fetch bill details ──────────────────────────────────────────────────────
   const handleFetchDetails = async () => {
     if (!validate()) return;
     setFetching(true);
     setBillData(null);
     try {
-      // TODO: replace with real biller info API call using selectedProvider.providerId
+      // TODO: replace with real bill-fetch API using selectedProviderId + fieldValues
       await new Promise((r) => setTimeout(r, 1200));
       setBillData({
         customerName: "RAJESH KUMAR",
@@ -220,6 +256,7 @@ const BBPSServiceForm = ({ service, onBack }) => {
     }
   };
 
+  // ── Pay ─────────────────────────────────────────────────────────────────────
   const handlePay = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       setAmountError("Enter a valid amount");
@@ -236,8 +273,10 @@ const BBPSServiceForm = ({ service, onBack }) => {
       setBillData(null);
       setAmount("");
       setSelectedProviderId("");
-      setSelectedProvider(null);
-      setFieldValues(Object.fromEntries(extraFields.map((f) => [f.name, ""])));
+      setBillerInfo(null);
+      setDynamicFields([]);
+      setFieldValues({});
+      setCustomerMobile("");
     } catch {
       toast.error("Payment failed. Please try again.");
     } finally {
@@ -252,7 +291,7 @@ const BBPSServiceForm = ({ service, onBack }) => {
       <div className="flex-1 px-6 py-8">
         <div className="max-w-md space-y-5">
 
-          {/* Provider dropdown */}
+          {/* ── Provider dropdown ─────────────────────────────────────────── */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Select Provider <span className="text-red-500">*</span>
@@ -284,42 +323,92 @@ const BBPSServiceForm = ({ service, onBack }) => {
             )}
           </div>
 
-          {/* Dynamic extra fields from static catalogue */}
-          {extraFields.map((field) => (
-            <div key={field.name}>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {field.label}{" "}
-                {field.required && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                type={field.type === "select" ? "text" : field.type}
-                value={fieldValues[field.name]}
-                onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                placeholder={field.placeholder}
-                className="w-72 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+          {/* ── Biller loading skeleton ───────────────────────────────────── */}
+          {loadingBiller && (
+            <div className="space-y-3 w-72">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-10 bg-gray-200 rounded-lg animate-pulse" />
+              ))}
             </div>
-          ))}
+          )}
 
-          {/* Fetch Details button */}
-          <div className="flex justify-end w-72 pt-1">
-            <button
-              onClick={handleFetchDetails}
-              disabled={fetching || loadingProviders}
-              className="px-7 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {fetching ? (
-                <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  Fetching...
-                </>
-              ) : (
-                "FETCH DETAILS"
+          {/* ── Fields shown only after biller info is loaded ─────────────── */}
+          {!loadingBiller && billerInfo && (
+            <>
+              {/* Biller description banner */}
+              {billerInfo.billerDescription && (
+                <div className="w-72 flex items-start gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2.5 text-xs text-indigo-800">
+                  <MdInfoOutline className="text-indigo-500 text-base mt-0.5 shrink-0" />
+                  <span>{billerInfo.billerDescription}</span>
+                </div>
               )}
-            </button>
-          </div>
 
-          {/* Bill details card */}
+              {/* Customer Mobile — always constant */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Customer Mobile <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  value={customerMobile}
+                  onChange={(e) => setCustomerMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit mobile number"
+                  maxLength={10}
+                  className="w-72 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Dynamic fields from billerInputParams */}
+              {dynamicFields
+                .filter((p) => p.visibility !== "false")
+                .map((param) => {
+                  const inputType = mapDataTypeToInputType(param.dataType);
+                  const isRequired = param.isOptional !== "true";
+                  return (
+                    <div key={param.paramName}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {param.paramName}{" "}
+                        {isRequired && <span className="text-red-500">*</span>}
+                        {param.minLength && param.maxLength && (
+                          <span className="text-gray-400 text-xs font-normal ml-1">
+                            ({param.minLength}–{param.maxLength} chars)
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type={inputType}
+                        value={fieldValues[param.paramName] || ""}
+                        onChange={(e) => handleFieldChange(param.paramName, e.target.value)}
+                        placeholder={`Enter ${param.paramName}`}
+                        minLength={param.minLength ? Number(param.minLength) : undefined}
+                        maxLength={param.maxLength ? Number(param.maxLength) : undefined}
+                        className="w-72 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                  );
+                })}
+
+              {/* Fetch Details button */}
+              <div className="flex justify-end w-72 pt-1">
+                <button
+                  onClick={handleFetchDetails}
+                  disabled={fetching}
+                  className="px-7 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {fetching ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      Fetching...
+                    </>
+                  ) : (
+                    "FETCH DETAILS"
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── Bill details card ─────────────────────────────────────────── */}
           {billData && (
             <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
               {/* Card header */}

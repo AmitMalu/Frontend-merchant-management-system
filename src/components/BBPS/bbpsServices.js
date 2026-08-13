@@ -4,6 +4,34 @@
  * a dynamic API call to fetch the operator list per category.
  */
 
+import api from "../../constants/API/axiosInstance";
+
+/**
+ * Fetch biller info for a given billerId.
+ * POST /billpay/biller-info  →  { statusCode, message, data: [ billerInfo ] }
+ */
+export const fetchBillerInfo = async (billerId) => {
+  const res = await api.post("/billpay/config/biller-info", {
+    billerId: [billerId],
+  });
+  // data is an array; return first element
+  const list = res.data?.data || [];
+  return list[0] || null;
+};
+
+/**
+ * Map a BBPS dataType string to an HTML input type.
+ */
+export const mapDataTypeToInputType = (dataType = "") => {
+  switch (dataType.toUpperCase()) {
+    case "NUMERIC":
+      return "number";
+    case "ALPHANUMERIC":
+    default:
+      return "text";
+  }
+};
+
 export const BBPS_SERVICES = [
   // ── Banking ──────────────────────────────────────────────────────────────
   {
