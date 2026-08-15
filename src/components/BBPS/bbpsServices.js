@@ -32,6 +32,68 @@ export const mapDataTypeToInputType = (dataType = "") => {
   }
 };
 
+/**
+ * Generate a simple unique request ID.
+ */
+const generateRequestId = () => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let id = "";
+  for (let i = 0; i < 35; i++) {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return id;
+};
+
+/**
+ * Fetch bill details for a biller.
+ * POST /billpay/bill-fetch
+ *
+ * @param {string}   billerId       - selected biller/provider ID
+ * @param {string}   customerMobile - customer mobile number
+ * @param {object}   fieldValues    - { paramName: paramValue } from dynamic fields
+ *
+ * agentId and agentDeviceInfo are set by the backend; we pass placeholder
+ * values here — the backend will override them.
+ */
+export const fetchBillDetails = async (billerId, customerMobile, fieldValues) => {
+  const inputList = Object.entries(fieldValues).map(([paramName, paramValue]) => ({
+    paramName,
+    paramValue,
+  }));
+
+  const payload = {
+    requestId: generateRequestId(),
+    billerId,
+    customerInfo: {
+      customerMobile,
+    },
+    inputParams: {
+      input: inputList,
+    },
+  };
+
+  const res = await api.post("/billpay/config/bill-fetch", payload);
+
+  // Backend wraps in CommonResponse — unwrap data
+  const data = res.data?.data ?? res.data;
+
+  // Bill Avenue returns responseCode "000" for success.
+  // Any other code (e.g. "001") is a biller-level error inside a 200 OK
+  // response — we must check it explicitly and throw so the UI can show it.
+  if (data?.responseCode && data.responseCode !== "000") {
+    const errors = data?.errorInfo?.error || [];
+    const msg = errors.length
+      ? errors.map((e) => `[${e.errorCode}] ${e.errorMessage}`).join(" | ")
+      : `Biller error (code ${data.responseCode})`;
+    const err = new Error(msg);
+    err.billerErrorCode = data.responseCode;
+    err.billerErrors    = errors;
+    throw err;
+  }
+
+  return data;
+};
+
 export const BBPS_SERVICES = [
   // ── Banking ──────────────────────────────────────────────────────────────
   {
