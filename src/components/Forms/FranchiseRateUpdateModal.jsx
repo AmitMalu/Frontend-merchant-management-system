@@ -167,50 +167,86 @@ const FranchiseRateUpdateModal = ({ assignment, onCancel, onSubmit }) => {
                             </div>
                         </div>
 
-                        {/* Card Rates inputs */}
+                        {/* Card Rates inputs - grouped product-wise, matching the admin Pricing Scheme UI */}
                         <div>
                             <h3 className="text-lg font-semibold text-gray-700 mb-3">Configure Merchant Rates</h3>
-                            <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-gray-50 border-b border-gray-200">
-                                            <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Card Type</th>
-                                            <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Min Franchise Rate (%)</th>
-                                            <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Merchant Rate (%)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200 bg-white">
-                                        {schemeDetails?.cardRates && schemeDetails.cardRates.map((cr) => (
-                                            <tr key={cr.id} className="hover:bg-gray-50">
-                                                <td className="px-4 py-3 font-medium text-gray-900">{cr.cardName}</td>
-                                                <td className="px-4 py-3 text-gray-600">{cr.franchiseRate || 0}%</td>
-                                                <td className="px-4 py-3">
-                                                    <div className="relative rounded-md shadow-sm max-w-[200px]">
+
+                            {schemeDetails?.cardRates && schemeDetails.cardRates.length > 0 ? (
+                                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                    <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                                        <h4 className="font-semibold text-blue-800">
+                                            {assignment?.productName || 'Unknown Product'}
+                                        </h4>
+                                        <p className="text-xs text-blue-600">
+                                            {schemeDetails.cardRates.length} card type(s)
+                                        </p>
+                                    </div>
+
+                                    <div className="p-3 space-y-3">
+                                        {schemeDetails.cardRates.map((cr) => (
+                                            <div key={cr.id} className="p-4 bg-white border border-gray-200 rounded-lg">
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Card Name
+                                                        </label>
+                                                        <input
+                                                            readOnly
+                                                            value={cr.cardName}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Category
+                                                        </label>
+                                                        <input
+                                                            readOnly
+                                                            value={cr.category || '-'}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Franchise Rate (%)
+                                                        </label>
+                                                        <input
+                                                            readOnly
+                                                            value={`${cr.franchiseRate || 0}%`}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Merchant Rate (%) <span className="text-red-500">*</span>
+                                                        </label>
                                                         <input
                                                             type="number"
                                                             step="0.001"
                                                             value={merchantRates[cr.cardName] ?? ''}
                                                             onChange={(e) => handleRateChange(cr.cardName, e.target.value)}
-                                                            className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                                                 errors[cr.cardName] ? 'border-red-500' : 'border-gray-300'
                                                             }`}
                                                             placeholder="0.00"
                                                         />
+                                                        {errors[cr.cardName] && (
+                                                            <p className="mt-1 text-xs text-red-500 font-medium">{errors[cr.cardName]}</p>
+                                                        )}
                                                     </div>
-                                                    {errors[cr.cardName] && (
-                                                        <p className="mt-1 text-xs text-red-500 font-medium">{errors[cr.cardName]}</p>
-                                                    )}
-                                                </td>
-                                            </tr>
+                                                </div>
+                                            </div>
                                         ))}
-                                        {(!schemeDetails?.cardRates || schemeDetails.cardRates.length === 0) && (
-                                            <tr>
-                                                <td colSpan="3" className="px-4 py-4 text-center text-gray-500">No card rates configured for this scheme.</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500 border border-dashed border-gray-300 rounded-lg">
+                                    <p className="text-sm">No card rates configured for this scheme.</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Action Buttons */}
