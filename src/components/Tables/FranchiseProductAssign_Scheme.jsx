@@ -324,6 +324,34 @@ const FranchiseProductAssign_Scheme = () => {
         }
     })
 
+    const groupCardRatesByProduct = (cardRates = []) => {
+        return cardRates.reduce((groups, rate) => {
+            const productCategoryId =
+                rate.productCategoryId ||
+                rate.productCategory?.id ||
+                'unknown'
+
+            const productName =
+                rate.productCategoryName ||
+                rate.productCategory?.categoryName ||
+                'Unknown Product'
+
+            const key = String(productCategoryId)
+
+            if (!groups[key]) {
+                groups[key] = {
+                    productCategoryId,
+                    productName,
+                    cardRates: []
+                }
+            }
+
+            groups[key].cardRates.push(rate)
+
+            return groups
+        }, {})
+    }
+
     const handleCreate = () => {
         setEditingAssignment(null)
         setIsModalOpen(true)
@@ -618,31 +646,48 @@ const FranchiseProductAssign_Scheme = () => {
                                 </div>
                             )}
 
-                            {/* Card Rates Section */}
+                            {/* Card Rates Section - grouped product-wise, matching the admin Pricing Scheme view */}
                             <div className="mt-8 border-t pt-6">
                                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Scheme Card Rates</h3>
                                 {loadingSchemeDetails ? (
                                     <div className="text-center text-gray-500 py-4">Loading rates...</div>
                                 ) : viewingSchemeDetails?.cardRates?.length > 0 ? (
-                                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead>
-                                                <tr className="bg-gray-50 border-b border-gray-200">
-                                                    <th className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Card Type</th>
-                                                    <th className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Franchise Rate (%)</th>
-                                                    <th className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Merchant Rate (%)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200 bg-white">
-                                                {viewingSchemeDetails.cardRates.map((cr) => (
-                                                    <tr key={cr.id} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-2 font-medium text-gray-900">{cr.cardName}</td>
-                                                        <td className="px-4 py-2 text-gray-600">{cr.franchiseRate || 0}%</td>
-                                                        <td className="px-4 py-2 text-gray-900 font-semibold">{cr.merchantRate || 0}%</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    <div className="space-y-4">
+                                        {Object.values(
+                                            groupCardRatesByProduct(viewingSchemeDetails.cardRates || [])
+                                        ).map(productGroup => (
+                                            <div
+                                                key={productGroup.productCategoryId}
+                                                className="border border-gray-200 rounded-lg overflow-hidden"
+                                            >
+                                                <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                                                    <h4 className="font-semibold text-blue-800">
+                                                        {productGroup.productName}
+                                                    </h4>
+                                                    <p className="text-xs text-blue-600">
+                                                        {productGroup.cardRates.length} card type(s)
+                                                    </p>
+                                                </div>
+                                                <div className="divide-y divide-gray-100">
+                                                    {productGroup.cardRates.map((rate, index) => (
+                                                        <div
+                                                            key={rate.id || index}
+                                                            className="flex justify-between items-center p-3 bg-white"
+                                                        >
+                                                            <div>
+                                                                <span className="font-medium text-gray-900">{rate.cardName}</span>
+                                                                {rate.category && (
+                                                                    <span className="ml-2 text-xs text-gray-500">({rate.category})</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-sm text-gray-600">
+                                                                Franchise: {rate.franchiseRate || 0}% | Merchant: <span className="text-gray-900 font-semibold">{rate.merchantRate || 0}%</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : (
                                     <p className="text-gray-500 text-sm">No card rates configured for this scheme.</p>
