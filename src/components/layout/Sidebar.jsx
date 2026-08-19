@@ -31,6 +31,14 @@ import {
 } from 'lucide-react';
 import { flattenPermissions } from "./permissionHelper";
 import logoImage from '../../assets/SD-2.jpg';
+import bMnemonicLogo from '../../assets/bbps-brand/b-mnemonic-logo.svg';
+
+// Bharat Connect brand guidelines, Stage 1: the B mnemonic must be used at the
+// channel's entry point wherever bill payment is used. Renders like a lucide
+// icon component (className-sized) so it drops into the existing icon slots.
+const BMnemonicIcon = ({ className }) => (
+  <img src={bMnemonicLogo} alt="Bharat Connect" className={className} />
+);
 
 // ============================================================================
 // CONSTANTS - Single source of truth
@@ -419,9 +427,14 @@ const MERCHANT_MENU_CONFIG = [
   {
     title: 'Bharat Bill',
     key: MENU_KEYS.BILL_PAYMENT,
-    path: '/dashboard/credit-card-bill-payment',
-    icon: Banknote,
-    iconColor: ''
+    icon: BMnemonicIcon,
+    iconColor: '',
+    children: [
+      { title: 'Bill Pay', path: '/dashboard/credit-card-bill-payment', icon: BMnemonicIcon },
+      { title: 'Transaction Status', path: '/dashboard/credit-card-bill-payment/transactions', icon: Eye },
+      { title: 'Raise Complaint', path: '/dashboard/credit-card-bill-payment/complaint', icon: Ticket },
+      { title: 'Complaint Status', path: '/dashboard/credit-card-bill-payment/complaint-status', icon: RefreshCw }
+    ]
   },
   {
     title: 'Payout',
