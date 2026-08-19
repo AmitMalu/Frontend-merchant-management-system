@@ -104,6 +104,15 @@ const DASHBOARD_CHILDREN_CONFIG = {
   ]
 };
 
+// Titles that admins can see too, but only when explicitly granted via the permissions table
+const GRANTABLE_ADMIN_TITLES = new Set([
+  MENU_TITLES.ADMIN_MANAGEMENT,
+  MENU_TITLES.LOGS,
+  MENU_TITLES.TAXES_MANAGE,
+  MENU_TITLES.EDIT_HISTORY,
+  MENU_TITLES.WALLET_ADJUSTMENT
+]);
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -146,7 +155,13 @@ const getDashboardChildren = (userType) => {
   }
 
   if (userType === USER_TYPES.ADMIN) {
-    return [...baseChildren, ...DASHBOARD_CHILDREN_CONFIG[USER_TYPES.ADMIN]];
+    return [
+      ...baseChildren,
+      ...DASHBOARD_CHILDREN_CONFIG[USER_TYPES.ADMIN],
+      // Included here so they can be shown when explicitly granted in the permissions table;
+      // shouldShowDashboardChild + hasPermission still gate actual visibility per user.
+      ...DASHBOARD_CHILDREN_CONFIG[USER_TYPES.SUPER_ADMIN]
+    ];
   }
 
   return baseChildren;
@@ -163,20 +178,15 @@ const filterChildrenByPermissions = (children, permissionSet, parentKey) => {
 const shouldShowDashboardChild = (child, userType) => {
   if (child.title === MENU_TITLES.DASHBOARD) return true;
 
-  const superAdminOnlyTitles = [
-    MENU_TITLES.ADMIN_MANAGEMENT,
-    MENU_TITLES.LOGS,
-    MENU_TITLES.TAXES_MANAGE,
-    MENU_TITLES.EDIT_HISTORY,
-    MENU_TITLES.WALLET_ADJUSTMENT
-  ];
-
-  if (superAdminOnlyTitles.includes(child.title)) {
-    return userType === USER_TYPES.SUPER_ADMIN;
-  }
-
   if (child.title === MENU_TITLES.MY_PERMISSIONS) {
     return userType === USER_TYPES.ADMIN;
+  }
+
+  // Admin Management / Logs / Taxes Manage / Edit History / Wallet Adjustment are no longer
+  // hardcoded to SUPER_ADMIN only — visibility for ADMIN users is decided by hasPermission()
+  // against their actual granted permissions (GRANTABLE_ADMIN_TITLES marks which ones apply).
+  if (userType === USER_TYPES.ADMIN && !GRANTABLE_ADMIN_TITLES.has(child.title)) {
+    return false;
   }
 
   return true;
