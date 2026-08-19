@@ -95,7 +95,7 @@ const DASHBOARD_CHILDREN_CONFIG = {
   [USER_TYPES.SUPER_ADMIN]: [
     { title: MENU_TITLES.ADMIN_MANAGEMENT, path: '/dashboard/role-management', icon: Users, permission: 'Admin Management' },
     { title: MENU_TITLES.LOGS, path: '/dashboard/logs', icon: Users, permission: 'Logs' },
-    { title: MENU_TITLES.TAXES_MANAGE, path: '/dashboard/taxes-management', icon: IndianRupee, permission: 'Taxes Management' },
+    { title: MENU_TITLES.TAXES_MANAGE, path: '/dashboard/taxes-management', icon: IndianRupee, permission: 'Taxes Manage' },
     { title: MENU_TITLES.EDIT_HISTORY, path: '/dashboard/edit-history', icon: Users, permission: 'Edit History' },
     { title: MENU_TITLES.WALLET_ADJUSTMENT, path: '/dashboard/wallet-adjustment', icon: Users, permission: 'Wallet Adjustment' }
   ],
