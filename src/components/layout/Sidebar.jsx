@@ -430,10 +430,10 @@ const MERCHANT_MENU_CONFIG = [
     icon: BMnemonicIcon,
     iconColor: '',
     children: [
-      { title: 'Bill Pay', path: '/dashboard/credit-card-bill-payment', icon: BMnemonicIcon },
-      { title: 'Transaction Status', path: '/dashboard/credit-card-bill-payment/transactions', icon: Eye },
-      { title: 'Raise Complaint', path: '/dashboard/credit-card-bill-payment/complaint', icon: Ticket },
-      { title: 'Complaint Status', path: '/dashboard/credit-card-bill-payment/complaint-status', icon: RefreshCw }
+      { title: 'Bill Pay', path: '/dashboard/bill-payment', icon: BMnemonicIcon },
+      { title: 'Transaction Status', path: '/dashboard/bill-payment/transaction', icon: Eye },
+      { title: 'Raise Complaint', path: '/dashboard/bill-payment/complaint', icon: Ticket },
+      { title: 'Complaint Status', path: '/dashboard/bill-payment/complaint-status', icon: RefreshCw }
     ]
   },
   {

@@ -121,7 +121,10 @@ const Header = ({ userType }) => {
       '/dashboard/others/charges': 'Charge Calculation',
       '/dashboard/reports': 'Reports',
       '/dashboard/payout': 'Payout',
-      '/dashboard/credit-card-bill-payment': 'Credit Card'
+      '/dashboard/bill-payment': 'Bill Pay',
+      '/dashboard/bill-payment/transaction': 'Transaction Status',
+      '/dashboard/bill-payment/complaint': 'Raise Complaint',
+      '/dashboard/bill-payment/complaint-status': 'Complaint Status'
     };
     return routeTitles[path] || 'Supply Chain Management';
   };
@@ -149,7 +152,11 @@ const Header = ({ userType }) => {
       'assign-products': 'Assign Products',
       'admin-approval': 'Approval',
       upload: 'Upload',
-      charges: 'Charges'
+      charges: 'Charges',
+      'bill-payment': 'Bharat Bill',
+      transaction: 'Transaction Status',
+      complaint: 'Raise Complaint',
+      'complaint-status': 'Complaint Status'
     };
 
     return segments.map(seg => breadcrumbMap[seg] || seg).join(' > ');

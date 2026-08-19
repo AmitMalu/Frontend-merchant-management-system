@@ -43,14 +43,14 @@ export const merchantRoutes = [
     ]
   },
   {
-    path: 'credit-card-bill-payment',
+    path: 'bill-payment',
     children: [
       {
         index: true,
         element: <BBPSPage />
       },
       {
-        path: 'transactions',
+        path: 'transaction',
         element: <TransactionStatusPage />
       },
       {
