@@ -8,6 +8,7 @@ import {
   COMPLAINT_DISPOSITIONS,
   registerUatComplaint,
 } from "./bbpsServices";
+import { sendComplaintRegisteredSms } from "./smsService";
 import { toast } from "react-toastify";
 
 const ComplaintRegistrationPage = () => {
@@ -69,6 +70,11 @@ const ComplaintRegistrationPage = () => {
     setResponse(result);
     setSubmitting(false);
     toast.success("Complaint registered successfully");
+
+    sendComplaintRegisteredSms({
+      txnRefId: selectedTxn.txnReferenceId,
+      complaintId: result.complaintId,
+    });
   };
 
   const handleNewComplaint = () => {
