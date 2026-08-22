@@ -95,6 +95,60 @@ export const fetchBillDetails = async (billerId, customerMobile, fieldValues) =>
 };
 
 /**
+ * Live bill payment.
+ * POST /billpay/config/bill-payment  →  CommonResponse{ statusCode, message, data: <BillAvenue response> }
+ *
+ * amount/custConvFee are in RUPEES here — the backend converts to paise
+ * before talking to Bill Avenue, matching every other rupee amount in this
+ * app. billerResponse should be passed through untouched from the bill-fetch
+ * result (it's already in paise, per the vendor's own contract).
+ */
+export const payBill = async ({
+  merchantId,
+  billerId,
+  customerMobile,
+  inputParams,
+  billerResponse,
+  billerAdhoc = "false",
+  amount,
+  custConvFee = 0,
+  paymentMode,
+  quickPay = false,
+}) => {
+  const payload = {
+    merchantId,
+    billerId,
+    billerAdhoc,
+    customerInfo: { customerMobile },
+    inputParams: { input: inputParams || [] },
+    billerResponse,
+    amountInfo: {
+      amount,
+      currency: "356",
+      custConvFee: String(custConvFee ?? 0),
+    },
+    paymentMethod: {
+      paymentMode,
+      quickPay: quickPay ? "Y" : "N",
+      splitPay: "N",
+    },
+  };
+
+  const res = await api.post("/billpay/config/bill-payment", payload);
+  return res.data; // { statusCode, message, data }
+};
+
+/**
+ * Live transaction status lookup.
+ * POST /billpay/config/transaction-status  →  CommonResponse{ statusCode, message, data: <BillAvenue response> }
+ */
+export const fetchTransactionStatusLive = async ({ trackingType, trackingValue, fromDate, toDate }) => {
+  const payload = { trackingType, trackingValue, fromDate, toDate };
+  const res = await api.post("/billpay/config/transaction-status", payload);
+  return res.data; // { statusCode, message, data }
+};
+
+/**
  * Hardcoded UAT sample payloads, sourced from the "UAT TEST DATA_AGT" sheet
  * (Fetch&Pay sheet + quick pay sheet) provided by Bharat Connect, keyed by
  * biller category. Lets testers preview each category's Fetch and Pay /

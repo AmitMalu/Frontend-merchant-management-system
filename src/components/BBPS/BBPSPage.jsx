@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MdChevronLeft, MdClose } from "react-icons/md";
-import { BBPS_SERVICES, fetchBillerInfo, fetchBillDetails, mapDataTypeToInputType, getUatSample } from "./bbpsServices";
+import { BBPS_SERVICES, fetchBillerInfo, fetchBillDetails, mapDataTypeToInputType, getUatSample, payBill } from "./bbpsServices";
 import { BharatConnectLogo, BeAssuredLogo } from "./brandLogos";
 import { sendTransactionSuccessSms } from "./smsService";
 import bharatConnectSonic from "../../assets/bbps-brand/bharat-connect-sonic.mp3";
@@ -101,12 +101,98 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
     return "";
   };
 
-  // UAT-hardcoded payment response for this category/mode (if any) — used to
-  // build a real receipt instead of the "Coming Soon" placeholder. Remove
-  // once a live payment API + provider lookups are wired up.
+  // UAT-hardcoded payment response for this category/mode (if any) — used by
+  // the SAMPLE pay path below to build a receipt without calling the live
+  // API. Remove once live credentials are fully confirmed.
   const uatPayResponse = uatSampleEntry?.payResponse;
 
+  // Quick Pay skips bill-fetch entirely, so billerResponse comes back empty
+  // (see handleQuickPay in BBPSServiceForm) — that's the same signal used
+  // here to tell Bill Avenue this is a quickPay=Y request.
+  const isQuickPay = !billerResp || Object.keys(billerResp).length === 0;
+
+  // ── Live Pay — calls the real /billpay/config/bill-payment endpoint ────────
   const handlePay = async (method) => {
+    const err = validateAmount(amount);
+    if (err) { setAmountError(err); return; }
+    setAmountError("");
+
+    const merchantId = Number(localStorage.getItem("customerId"));
+    if (!merchantId) {
+      toast.error("Unable to identify merchant — please log in again.");
+      return;
+    }
+
+    setPaying(true);
+    try {
+      const billAmountRupees = Number(amount) || 0;
+
+      const res = await payBill({
+        merchantId,
+        billerId: billerInfo?.billerId,
+        customerMobile: customerMobile || uatSampleEntry?.mobile,
+        inputParams: inputEcho,
+        billerResponse: billResult?.billerResponse,
+        amount: billAmountRupees,
+        custConvFee: 0,
+        paymentMode: method,
+        quickPay: isQuickPay,
+      });
+
+      const vendorData = res?.data;
+      if (res?.statusCode !== 200 || !vendorData || vendorData.responseCode !== "000") {
+        const msg =
+          vendorData?.vErrorRootVO?.error?.[0]?.errorMessage ||
+          res?.message ||
+          "Payment failed";
+        toast.error(msg);
+        return;
+      }
+
+      const ccfRupees        = vendorData.custConvFee ? Number(vendorData.custConvFee) / 100 : 0;
+      const totalAmountRupees = billAmountRupees + ccfRupees;
+      const txnDateTime      = new Date().toLocaleString("en-IN");
+      const consumerNo       = inputEcho[0]?.paramValue || vendorData.respBillNumber || "";
+
+      setReceipt({
+        txnRefId: vendorData.txnRefId,
+        billerId: billerInfo?.billerId,
+        billerName: service?.serviceName,
+        customerName: vendorData.respCustomerName || billerResp.customerName,
+        customerNumber: customerMobile || uatSampleEntry?.mobile,
+        billDate: vendorData.respBillDate || billerResp.billDate,
+        billPeriod: vendorData.respBillPeriod || billerResp.billPeriod,
+        billNumber: vendorData.respBillNumber || billerResp.billNumber,
+        dueDate: vendorData.respDueDate || billerResp.dueDate,
+        billAmount: billAmountRupees,
+        ccf: ccfRupees,
+        totalAmount: totalAmountRupees,
+        txnDateTime,
+        initiatingChannel: "WEB",
+        paymentMode: method,
+        status: vendorData.responseReason || "Successful",
+        approvalNumber: vendorData.approvalRefNumber,
+      });
+
+      sonicRef.current?.play().catch(() => {});
+
+      sendTransactionSuccessSms({
+        amount: totalAmountRupees.toFixed(2),
+        billerName: service?.serviceName,
+        consumerNo,
+        txnRefId: vendorData.txnRefId,
+        dateTime: txnDateTime,
+        paymentChannel: method,
+      });
+    } catch (e) {
+      toast.error(e?.response?.data?.message || e.message || "Payment failed");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  // ── 🧪 SAMPLE Pay (UAT) — remove once live confirmed ────────────────────────
+  const handleSamplePay = async (method) => {
     const err = validateAmount(amount);
     if (err) { setAmountError(err); return; }
     setAmountError("");
@@ -302,7 +388,18 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
             </button>
           </div>
         ) : !comingSoon && (
-          <div className="flex items-center justify-end px-6 py-4 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
+            {/* 🧪 UAT ONLY — remove once live confirmed */}
+            {uatPayResponse && (
+              <button
+                onClick={() => handleSamplePay("WALLET")}
+                disabled={paying}
+                title="Build receipt from hardcoded UAT sample data"
+                className="px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 border-2 border-amber-300 flex items-center gap-1"
+              >
+                🧪 SAMPLE PAY
+              </button>
+            )}
             <button
               onClick={() => handlePay("WALLET")}
               disabled={paying}
