@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { MdSearch } from "react-icons/md";
 import { TopBar, ReceiptRow } from "./BBPSPage";
-import { findUatTransactionByRefId, findUatTransactionsByMobile } from "./bbpsServices";
+import { findUatTransactionByRefId, findUatTransactionsByMobile, fetchTransactionStatusLive } from "./bbpsServices";
 import { toast } from "react-toastify";
 
 // UAT ONLY — fixed mock OTP, no real SMS gateway wired up yet. Remove once
@@ -51,7 +51,48 @@ const TransactionStatusPage = () => {
     setOtp("");
   };
 
-  const handleRefIdSearch = () => {
+  // Real API's txnList doesn't include a friendly biller name (only
+  // billerId), unlike the UAT fixtures — fall back to billerId for display.
+  const mapVendorTxnList = (txnList) =>
+    (txnList || []).map((t) => ({
+      billerName: t.billerId,
+      txnStatus: t.txnStatus,
+      txnReferenceId: t.txnReferenceId,
+      agentId: t.agentId,
+      billerId: t.billerId,
+      amount: t.amount,
+      txnDate: t.txnDate,
+      mobile: t.mobile,
+      approvalRefNumber: t.approvalRefNumber,
+    }));
+
+  // ── Live search — calls the real /billpay/config/transaction-status endpoint ──
+  const handleRefIdSearch = async () => {
+    if (!refId.trim()) {
+      toast.error("Enter a BBPS Transaction Ref ID");
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await fetchTransactionStatusLive({ trackingType: "TRANS_REF_ID", trackingValue: refId.trim() });
+      const vendorData = res?.data;
+      if (res?.statusCode !== 200 || !vendorData || vendorData.responseCode !== "000") {
+        const msg = vendorData?.errorInfo?.error?.[0]?.errorMessage || res?.message || "Transaction not found";
+        toast.error(msg);
+        setResults([]);
+        return;
+      }
+      setResults(mapVendorTxnList(vendorData.txnList));
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || "Search failed");
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  // 🧪 UAT ONLY — remove once live confirmed
+  const handleSampleRefIdSearch = () => {
     if (!refId.trim()) {
       toast.error("Enter a BBPS Transaction Ref ID");
       return;
@@ -71,7 +112,38 @@ const TransactionStatusPage = () => {
     toast.info(`UAT demo — use OTP ${MOCK_OTP}`);
   };
 
-  const handleVerifyAndSearch = () => {
+  // ── Live search — calls the real /billpay/config/transaction-status endpoint ──
+  const handleVerifyAndSearch = async () => {
+    if (otp.trim() !== MOCK_OTP) {
+      toast.error("Invalid OTP");
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await fetchTransactionStatusLive({
+        trackingType: "MOBILE_NO",
+        trackingValue: mobile.trim(),
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+      });
+      const vendorData = res?.data;
+      if (res?.statusCode !== 200 || !vendorData || vendorData.responseCode !== "000") {
+        const msg = vendorData?.errorInfo?.error?.[0]?.errorMessage || res?.message || "No transactions found";
+        toast.error(msg);
+        setResults([]);
+        return;
+      }
+      setResults(mapVendorTxnList(vendorData.txnList));
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || "Search failed");
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  // 🧪 UAT ONLY — remove once live confirmed
+  const handleSampleVerifyAndSearch = () => {
     if (otp.trim() !== MOCK_OTP) {
       toast.error("Invalid OTP");
       return;
@@ -149,6 +221,15 @@ const TransactionStatusPage = () => {
                 >
                   <MdSearch /> Search
                 </button>
+                {/* 🧪 UAT ONLY — remove once live confirmed */}
+                <button
+                  onClick={handleSampleRefIdSearch}
+                  disabled={searching}
+                  title="Look up hardcoded UAT sample transactions"
+                  className="px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 border-2 border-amber-300 flex items-center gap-1"
+                >
+                  🧪 SAMPLE
+                </button>
               </div>
             ) : (
               <>
@@ -214,6 +295,15 @@ const TransactionStatusPage = () => {
                       className="px-6 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                     >
                       <MdSearch /> Verify &amp; Search
+                    </button>
+                    {/* 🧪 UAT ONLY — remove once live confirmed */}
+                    <button
+                      onClick={handleSampleVerifyAndSearch}
+                      disabled={searching}
+                      title="Look up hardcoded UAT sample transactions"
+                      className="px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 border-2 border-amber-300 flex items-center gap-1"
+                    >
+                      🧪 SAMPLE
                     </button>
                   </div>
                 )}
