@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { MdChevronLeft, MdClose } from "react-icons/md";
 import { BBPS_SERVICES, fetchBillerInfo, fetchBillDetails, mapDataTypeToInputType, getUatSample } from "./bbpsServices";
 import { BharatConnectLogo, BeAssuredLogo } from "./brandLogos";
+import { sendTransactionSuccessSms } from "./smsService";
 import bharatConnectSonic from "../../assets/bbps-brand/bharat-connect-sonic.mp3";
 import api from "../../constants/API/axiosInstance";
 import { toast } from "react-toastify";
@@ -115,8 +116,14 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
       return;
     }
 
-    const billAmountRupees = uatPayResponse.respAmount ? Number(uatPayResponse.respAmount) / 100 : Number(amount) || 0;
+    // The amount field is user-editable and already validated above — it must
+    // win over the hardcoded UAT sample amount, so the receipt/SMS reflect
+    // whatever the user actually entered rather than the fixture value.
+    const billAmountRupees = Number(amount) || 0;
     const ccfRupees        = uatPayResponse.custConvFee ? Number(uatPayResponse.custConvFee) / 100 : 0;
+    const totalAmountRupees = billAmountRupees + ccfRupees;
+    const txnDateTime      = new Date().toLocaleString("en-IN");
+    const consumerNo       = inputEcho[0]?.paramValue || uatPayResponse.respBillNumber || "";
 
     setReceipt({
       txnRefId: uatPayResponse.txnRefId,
@@ -130,8 +137,8 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
       dueDate: uatPayResponse.respDueDate || billerResp.dueDate,
       billAmount: billAmountRupees,
       ccf: ccfRupees,
-      totalAmount: billAmountRupees + ccfRupees,
-      txnDateTime: new Date().toLocaleString("en-IN"),
+      totalAmount: totalAmountRupees,
+      txnDateTime,
       initiatingChannel: "WEB",
       paymentMode: method,
       status: uatPayResponse.responseReason || "Successful",
@@ -142,6 +149,15 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
     // trigger it here, inside the click handler, so it counts as
     // user-initiated for browser autoplay policies.
     sonicRef.current?.play().catch(() => {});
+
+    sendTransactionSuccessSms({
+      amount: totalAmountRupees.toFixed(2),
+      billerName: service?.serviceName,
+      consumerNo,
+      txnRefId: uatPayResponse.txnRefId,
+      dateTime: txnDateTime,
+      paymentChannel: method,
+    });
   };
 
   // Build all display fields:
@@ -188,13 +204,13 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
 
           {receipt ? (
-            /* ── Receipt screen — B Assured logo top-left, per brand guidelines (digital receipt) ── */
+            /* ── Receipt screen — B Assured logo top-right corner, for optimum visibility ── */
             <div>
               <div className="flex items-center justify-between mb-2">
-                <BeAssuredLogo />
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                   {receipt.status}
                 </span>
+                <BeAssuredLogo />
               </div>
               <div className="flex flex-col items-center gap-2 py-2">
                 <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-3xl">✓</div>
