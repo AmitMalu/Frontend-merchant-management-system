@@ -27,6 +27,7 @@ const ProductOutward = lazy(() => import('../../components/Tables/ProductOutward
 const AdminRolesDashboard = lazy(() => import('../../components/Admin/AdminRolesDashboard.jsx'));
 const BusinessLogs = lazy(() => import('../../components/Admin/BusinessLogs.jsx'));
 const WalletAdjustment = lazy(() => import('../../components/Admin/WalletAdjustment.jsx'));
+const ChangePassword = lazy(() => import('../../components/Admin/ChangePassword.jsx'));
 const ProductDistributionList = lazy(() => import('../../components/Tables/ProductDistributionList.jsx'));
 const FranchiseReports = lazy(() => import('../../components/Reports/FranchiseReports.jsx'));
 const VendorReports = lazy(() => import('../../components/Reports/VendorReports.jsx'));
@@ -145,6 +146,10 @@ export const adminRoutes = [
       {
         path: "inward-products",
         element: <ProductOutward />
+      },
+      {
+        path: "change-password",
+        element: <ChangePassword />
       }
     ]
   },

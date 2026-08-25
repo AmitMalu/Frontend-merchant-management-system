@@ -27,7 +27,8 @@ import {
   PercentDiamond,
   IdCard,
   SlidersHorizontal,
-  RefreshCw
+  RefreshCw,
+  KeyRound
 } from 'lucide-react';
 import { flattenPermissions } from "./permissionHelper";
 import logoImage from '../../assets/SD-2.jpg';
@@ -89,7 +90,7 @@ const SUPER_ADMIN_PERMISSIONS = new Set([
   'Dashboard', 'Admin Management', 'Logs', 'Taxes Manage', 'Edit History', 'Wallet Adjustment',
   'Vendors', 'Vendor List', 'Product List', 'Vendor Rates', 'Vendor Routing',
   'Inventory', 'Pricing Scheme', 'Product Scheme Assign', 'Inventory Management',
-  'Customers', 'Customer List', 'Onboard Customer', 'Merchant Approval', 'Products Distribution',
+  'Customers', 'Customer List', 'Onboard Customer', 'Merchant Approval', 'Products Distribution', 'Change Password',
   'Payment', 'Payment Products', 'Payment Charges', 'Payment Vendors', 'Payment Vendors Credentials', 'Payment Vendor Routing',
   'Other', 'File Upload', 'Charge Calculation', 'Batch Status', 'Prefund Authorization', 'Merchant Settings', 'Update Transaction',
   'Reports'
@@ -289,7 +290,8 @@ const ADMIN_MENU_CONFIG = (userType) => [
       { title: 'Customer List', path: '/dashboard/customers', icon: Users, permission: 'Customer List' },
       { title: 'Onboard Customer', path: '/dashboard/customers/onboard', icon: UserPlus, permission: 'Onboard Customer' },
       { title: 'Merchant Approval', path: '/dashboard/customers/admin-approval', icon: UserPlus, permission: 'Merchant Approval' },
-      { title: 'Products Distribution', path: '/dashboard/customers/products-distribution', icon: Package, permission: 'Products Distribution' }
+      { title: 'Products Distribution', path: '/dashboard/customers/products-distribution', icon: Package, permission: 'Products Distribution' },
+      { title: 'Change Password', path: '/dashboard/customers/change-password', icon: KeyRound, permission: 'Change Password' }
     ]
   },
   {
