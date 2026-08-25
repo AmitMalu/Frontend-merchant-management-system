@@ -293,7 +293,7 @@ const AdminApproval = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await api.get('/merchants/unapproved');
+            const response = await api.get('/merchants/all-for-approval');
             setData(response.data);
         } catch (err) {
             setError('Failed to fetch merchants');
