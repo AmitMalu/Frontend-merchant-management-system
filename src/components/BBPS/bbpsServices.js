@@ -514,16 +514,6 @@ export const BBPS_SERVICES = [
     ],
   },
   {
-    id: "donation",
-    label: "Donation",
-    category: "Others",
-    fields: [
-      { name: "provider",    label: "Select Provider",  type: "select", required: true },
-      { name: "donor_id",    label: "Donor ID",         type: "text",   required: false, placeholder: "Enter donor ID (optional)" },
-      { name: "mobile",      label: "Mobile Number",    type: "tel",    required: true,  placeholder: "10-digit mobile" },
-    ],
-  },
-  {
     id: "insurance",
     label: "Insurance",
     category: "Banking",
@@ -752,16 +742,6 @@ export const BBPS_SERVICES = [
       { name: "mobile",    label: "Mobile Number",      type: "tel",    required: true, placeholder: "10-digit mobile" },
     ],
   },
-  {
-    id: "recurring_deposit",
-    label: "Recurring Deposit",
-    category: "Banking",
-    fields: [
-      { name: "provider",   label: "Select Provider",     type: "select", required: true },
-      { name: "account_no", label: "RD Account Number",   type: "text",   required: true, placeholder: "Enter RD account number" },
-      { name: "mobile",     label: "Mobile Number",       type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
 ];
 
 /**
@@ -774,7 +754,6 @@ export const BBPS_PROVIDERS = {
   housing_society:      ["NoBrokerHood", "MyGate", "Apnacomplex", "Society Connect"],
   municipal_taxes:      ["MCGM Mumbai", "BBMP Bengaluru", "NDMC Delhi", "AMC Ahmedabad", "PMC Pune"],
   clubs_and_associations: ["BCCI", "Golf Club India", "Lions Club", "Rotary Club"],
-  donation:             ["PM CARES Fund", "CRY", "Help Age India", "UNICEF India"],
   insurance:            ["LIC", "SBI Life", "HDFC Life", "ICICI Prudential", "Bajaj Allianz"],
   gas:                  ["IGL Delhi", "MGL Mumbai", "Gujarat Gas", "Adani Gas"],
   electricity:          ["MSEDCL", "BESCOM", "TPDDL Delhi", "CESC Kolkata", "UPPCL"],
@@ -798,5 +777,4 @@ export const BBPS_PROVIDERS = {
   ev_recharge:          ["Tata Power EZ Charge", "EESL", "Ather Grid", "ChargeZone", "BPCL"],
   fleet_card_recharge:  ["HPCL Fleet Card", "IOCL Fleet Card", "BPCL Fleet Card"],
   education_fees:       ["DPS", "Ryan International", "Amity University", "Manipal University", "VIT"],
-  recurring_deposit:    ["SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "Post Office"],
 };

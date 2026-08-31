@@ -46,7 +46,6 @@ export const bbpsIconMap = {
   lpg_gas:              MdPropaneTank,
   // Banking
   loan_repayment:       MdAccountBalance,
-  recurring_deposit:    MdSavings,
   insurance:            MdSecurity,
   credit_card:          MdCreditCard,
   fastag:               MdDirectionsCar,
@@ -64,7 +63,6 @@ export const bbpsIconMap = {
   hospital:             MdLocalHospital,
   hospital_and_pathology: MdBiotech,
   // Others
-  donation:             MdVolunteerActivism,
   clubs_and_associations: MdGroups,
   subscription:         MdSubscriptions,
   subscription_fees:    MdSubscriptions,

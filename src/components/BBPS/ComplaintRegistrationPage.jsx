@@ -37,7 +37,7 @@ const ComplaintRegistrationPage = () => {
   };
 
   const handleFindByRefId = () => {
-    if (!refId.trim()) { toast.error("Enter a BBPS Transaction ID"); return; }
+    if (!refId.trim()) { toast.error("Enter a B-Connect Txn ID"); return; }
     const match = findUatTransactionByRefId(refId);
     if (!match) { toast.error("No transaction found for that ID"); return; }
     setSelectedTxn(match);
@@ -104,7 +104,7 @@ const ComplaintRegistrationPage = () => {
               </div>
               <div className="border border-gray-100 rounded-xl px-4">
                 <ReceiptRow label="Complaint Type" value={complaintType} />
-                <ReceiptRow label="Transaction ID" value={selectedTxn?.txnReferenceId} mono />
+                <ReceiptRow label="B-Connect Txn ID" value={selectedTxn?.txnReferenceId} mono />
                 <ReceiptRow label="Customer Name" value={selectedTxn?.respCustomerName} />
                 <ReceiptRow label="Complaint ID" value={response.complaintId} mono bold />
                 <ReceiptRow label="Complaint Assigned To" value={response.complaintAssigned} />
@@ -129,7 +129,7 @@ const ComplaintRegistrationPage = () => {
 
                 <div className="flex flex-wrap gap-3">
                   {[
-                    { value: "REF_ID", label: "BBPS Transaction ID" },
+                    { value: "REF_ID", label: "B-Connect Txn ID" },
                     { value: "MOBILE", label: "Mobile Number & Date Range" },
                   ].map((opt) => (
                     <label

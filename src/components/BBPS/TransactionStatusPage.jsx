@@ -21,7 +21,7 @@ const TransactionResultRow = ({ txn }) => (
         {txn.txnStatus}
       </span>
     </div>
-    <ReceiptRow label="BBPS Transaction ID" value={txn.txnReferenceId} mono />
+    <ReceiptRow label="B-Connect Txn ID" value={txn.txnReferenceId} mono />
     <ReceiptRow label="Agent ID" value={txn.agentId} mono />
     <ReceiptRow label="Biller ID" value={txn.billerId} />
     <ReceiptRow label="Amount" value={`₹${(Number(txn.amount) / 100).toFixed(2)}`} />
@@ -69,7 +69,7 @@ const TransactionStatusPage = () => {
   // ── Live search — calls the real /billpay/config/transaction-status endpoint ──
   const handleRefIdSearch = async () => {
     if (!refId.trim()) {
-      toast.error("Enter a BBPS Transaction Ref ID");
+      toast.error("Enter a B-Connect Txn Ref ID");
       return;
     }
     setSearching(true);
@@ -94,7 +94,7 @@ const TransactionStatusPage = () => {
   // 🧪 UAT ONLY — remove once live confirmed
   const handleSampleRefIdSearch = () => {
     if (!refId.trim()) {
-      toast.error("Enter a BBPS Transaction Ref ID");
+      toast.error("Enter a B-Connect Txn Ref ID");
       return;
     }
     setSearching(true);
@@ -174,7 +174,7 @@ const TransactionStatusPage = () => {
             </label>
             <div className="flex flex-wrap gap-3">
               {[
-                { value: "REF_ID", label: "BBPS Transaction Ref ID" },
+                { value: "REF_ID", label: "B-Connect Txn Ref ID" },
                 { value: "MOBILE", label: "Mobile Number & Date Range" },
               ].map((opt) => (
                 <label
@@ -204,7 +204,7 @@ const TransactionStatusPage = () => {
               <div className="flex flex-wrap items-end gap-3">
                 <div className="min-w-[260px]">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    BBPS Transaction Ref ID <span className="text-red-500">*</span>
+                    B-Connect Txn Ref ID <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"

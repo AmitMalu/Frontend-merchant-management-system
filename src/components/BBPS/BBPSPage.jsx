@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MdChevronLeft, MdClose } from "react-icons/md";
 import { BBPS_SERVICES, fetchBillerInfo, fetchBillDetails, mapDataTypeToInputType, getUatSample, payBill } from "./bbpsServices";
-import { BharatConnectLogo, BeAssuredLogo } from "./brandLogos";
+import { BharatConnectLogo, BeAssuredLogo, BMnemonicLogo } from "./brandLogos";
 import { sendTransactionSuccessSms } from "./smsService";
 import bharatConnectSonic from "../../assets/bbps-brand/bharat-connect-sonic.mp3";
 import api from "../../constants/API/axiosInstance";
@@ -12,17 +12,24 @@ const VENDOR_NAME = "Bill Avenue";
 // ─── Top bar ──────────────────────────────────────────────────────────────────
 // Bharat Connect logo: fixed top-right, same size/markup on every screen
 // (Biller Selection, Bill Fetch, Bill Payment) per brand guidelines.
+// B mnemonic: left-aligned, directly below the title row, on every screen.
 export const TopBar = ({ title, onBack, showBack = true }) => (
-  <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
-    <div className="flex items-center gap-2">
-      {showBack && (
-        <button onClick={onBack} className="p-1 rounded-lg hover:bg-gray-100 transition-colors text-gray-600">
-          <MdChevronLeft className="text-2xl" />
-        </button>
-      )}
-      <span className="text-lg font-bold text-gray-800">{title}</span>
+  <div className="bg-white border-b border-gray-200 shadow-sm">
+    <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center gap-2">
+        {showBack && (
+          <button onClick={onBack} className="p-1 rounded-lg hover:bg-gray-100 transition-colors text-gray-600">
+            <MdChevronLeft className="text-2xl" />
+          </button>
+        )}
+        <span className="text-lg font-bold text-gray-800">{title}</span>
+      </div>
+      <BharatConnectLogo />
     </div>
-    <BharatConnectLogo />
+    <div className="flex flex-col items-start px-6 pb-3">
+      <BMnemonicLogo className="h-12 w-auto" />
+      <span className="mt-2 text-sm font-bold text-gray-700 tracking-wide">Bill Payment</span>
+    </div>
   </div>
 );
 
@@ -62,12 +69,16 @@ const FloatingInput = ({ label, value, onChange, type = "text", placeholder = ""
 );
 
 // ─── Bill Details Modal ───────────────────────────────────────────────────────
-const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uatSampleEntry, onClose, onPay }) => {
+const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uatSampleEntry, onClose }) => {
   const [amount, setAmount]         = useState("");
   const [amountError, setAmountError] = useState("");
   const [paying, setPaying]         = useState(false);
   const [comingSoon, setComingSoon] = useState(false);
   const [receipt, setReceipt]       = useState(null);
+  // Stage-3 of the brand journey is two screens, not one: a "Payment Successful"
+  // confirmation (B Assured + sonic branding) shown first, then the itemized
+  // receipt. This flag gates which of the two is currently shown.
+  const [showReceiptDetails, setShowReceiptDetails] = useState(false);
   const sonicRef                    = useRef(null);
 
   const billerResp     = billResult?.billerResponse   || {};
@@ -274,7 +285,9 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
         {/* Modal header — Bharat Connect logo (Bill Details) or Be-Assured logo (Coming Soon placeholder).
             The real receipt carries its own B Assured logo top-left, per brand guidelines, not the header. */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">{receipt ? "Bill Pay Receipt" : "Bill Details"}</h2>
+          <h2 className="text-lg font-bold text-gray-800">
+            {receipt ? (showReceiptDetails ? "Bill Pay Receipt" : "Payment Confirmation") : "Bill Details"}
+          </h2>
           <div className="flex items-center gap-3">
             {!receipt && (comingSoon ? <BeAssuredLogo /> : <BharatConnectLogo />)}
             <button
@@ -289,21 +302,31 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
         {/* Modal body */}
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
 
-          {receipt ? (
-            /* ── Receipt screen — B Assured logo top-right corner, for optimum visibility ── */
+          {receipt && !showReceiptDetails ? (
+            /* ── Stage-3, screen 1: Payment Successful confirmation — B Assured
+               logo on a white background, per brand guidelines. Sonic branding
+               plays alongside this screen (triggered in handlePay/handleSamplePay). ── */
+            <div className="flex flex-col items-center justify-center py-10 gap-4 bg-white">
+              <BeAssuredLogo />
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-4xl">✓</div>
+              <h3 className="text-2xl font-bold text-gray-800 tracking-wide">Payment Successful</h3>
+              <p className="text-sm text-gray-500">
+                ₹{receipt.totalAmount.toFixed(2)} paid to {receipt.billerName}
+              </p>
+              <p className="text-xs text-gray-400 font-mono">B-Connect Txn ID: {receipt.txnRefId}</p>
+            </div>
+          ) : receipt ? (
+            /* ── Stage-3, screen 2: itemized receipt — B Assured logo top-left
+               corner, per brand guidelines ("optimum visibility" on the receipt). ── */
             <div>
               <div className="flex items-center justify-between mb-2">
+                <BeAssuredLogo />
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                   {receipt.status}
                 </span>
-                <BeAssuredLogo />
               </div>
-              <div className="flex flex-col items-center gap-2 py-2">
-                <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-3xl">✓</div>
-                <h3 className="text-xl font-bold text-gray-800">Transaction Successful!</h3>
-              </div>
-              <div className="border border-gray-100 rounded-xl px-4">
-                <ReceiptRow label="BBPS Transaction ID" value={receipt.txnRefId} mono />
+              <div className="border border-gray-100 rounded-xl px-4 mt-3">
+                <ReceiptRow label="B-Connect Txn ID" value={receipt.txnRefId} mono />
                 <ReceiptRow label="Biller ID" value={receipt.billerId} />
                 <ReceiptRow label="Biller Name" value={receipt.billerName} />
                 <ReceiptRow label="Customer Name" value={receipt.customerName} />
@@ -313,7 +336,7 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
                 <ReceiptRow label="Bill Number" value={receipt.billNumber} />
                 <ReceiptRow label="Due Date" value={receipt.dueDate} />
                 <ReceiptRow label="Bill Amount" value={`₹${receipt.billAmount.toFixed(2)}`} />
-                <ReceiptRow label="Customer Convenience Fees" value={`₹${receipt.ccf.toFixed(2)}`} />
+                <ReceiptRow label="Consumer Convenience Fee (CCF)" value={`₹${receipt.ccf.toFixed(2)}`} />
                 <ReceiptRow label="Total Amount" value={`₹${receipt.totalAmount.toFixed(2)}`} bold />
                 <ReceiptRow label="Transaction Date and Time" value={receipt.txnDateTime} />
                 <ReceiptRow label="Initiating Channel" value={receipt.initiatingChannel} />
@@ -380,12 +403,21 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
         {/* Modal footer */}
         {receipt ? (
           <div className="flex items-center justify-end px-6 py-4 border-t border-gray-100 bg-gray-50">
-            <button
-              onClick={onClose}
-              className="px-10 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors"
-            >
-              Close
-            </button>
+            {showReceiptDetails ? (
+              <button
+                onClick={onClose}
+                className="px-10 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors"
+              >
+                Close
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowReceiptDetails(true)}
+                className="px-10 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors"
+              >
+                View Receipt
+              </button>
+            )}
           </div>
         ) : !comingSoon && (
           <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
@@ -445,8 +477,9 @@ const BBPSServiceGrid = ({ onSelectService }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <TopBar title="Bharat Bill Payment" showBack={false} />
-      <div className="flex-1 px-6 py-10">
+      <TopBar title="Bharat Connect" showBack={false} />
+
+      <div className="flex-1 px-6 py-6">
         <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
           <h2 className="text-sm font-bold text-gray-800 mb-4">Bharat Connect Billers</h2>
 
@@ -662,20 +695,6 @@ const BBPSServiceForm = ({ service, onBack }) => {
     } finally {
       setSampleFetching(false);
     }
-  };
-
-  // ── Pay handler (called from modal) ────────────────────────────────────────
-  const handlePay = async (amount, method) => {
-    await new Promise((r) => setTimeout(r, 1500)); // TODO: wire real payment API
-    toast.success(`₹${Number(amount).toLocaleString("en-IN")} paid successfully!`);
-    setShowModal(false);
-    setBillResult(null);
-    setSelectedProviderId("");
-    setBillerInfo(null);
-    setDynamicFields([]);
-    setFieldValues({});
-    setCustomerMobile("");
-    setFetchError(null);
   };
 
   const isLoading = fetching || sampleFetching || loadingBiller;
@@ -897,7 +916,6 @@ const BBPSServiceForm = ({ service, onBack }) => {
           customerMobile={customerMobile}
           uatSampleEntry={payMode === "QUICK_PAY" ? uatSample?.quickPay : uatSample?.fetchAndPay}
           onClose={() => setShowModal(false)}
-          onPay={handlePay}
         />
       )}
     </div>
