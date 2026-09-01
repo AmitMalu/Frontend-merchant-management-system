@@ -28,7 +28,9 @@ import {
   IdCard,
   SlidersHorizontal,
   RefreshCw,
-  KeyRound
+  KeyRound,
+  ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 import { flattenPermissions } from "./permissionHelper";
 import logoImage from '../../assets/SD-2.jpg';
@@ -64,7 +66,8 @@ const MENU_KEYS = {
   PAYOUT: 'payout',
   BILL_PAYMENT: 'payment',
   CARD_DETAILS: 'card-details',
-  FUNDING: 'funding'
+  FUNDING: 'funding',
+  TRANSACTION_MONITORING: 'transaction-monitoring'
 };
 
 const MENU_TITLES = {
@@ -93,6 +96,7 @@ const SUPER_ADMIN_PERMISSIONS = new Set([
   'Customers', 'Customer List', 'Onboard Customer', 'Merchant Approval', 'Products Distribution', 'Change Password',
   'Payment', 'Payment Products', 'Payment Charges', 'Payment Vendors', 'Payment Vendors Credentials', 'Payment Vendor Routing',
   'Other', 'File Upload', 'Charge Calculation', 'Batch Status', 'Prefund Authorization', 'Merchant Settings', 'Update Transaction',
+  'Transaction Monitoring',
   'Reports'
 ]);
 
@@ -321,6 +325,17 @@ const ADMIN_MENU_CONFIG = (userType) => [
       { title: 'Prefund Authorization', path: '/dashboard/others/prefund-authorization', icon: Eye, permission: 'Prefund Authorization' },
       { title: 'Merchant Settings', path: '/dashboard/others/merchant-settings', icon: SlidersHorizontal, permission: 'Merchant Settings' },
       { title: 'Update Transaction', path: '/dashboard/others/update-transaction', icon: RefreshCw, permission: 'Update Transaction' }
+    ]
+  },
+  {
+    title: 'Monitoring',
+    key: MENU_KEYS.TRANSACTION_MONITORING,
+    icon: ShieldAlert,
+    iconColor: '',
+    permission: 'Transaction Monitoring',
+    children: [
+      { title: 'Dashboard', path: '/dashboard/monitoring', icon: ShieldAlert, permission: 'Transaction Monitoring' },
+      { title: 'Rules', path: '/dashboard/monitoring/rules', icon: AlertTriangle, permission: 'Transaction Monitoring' }
     ]
   },
   {

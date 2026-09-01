@@ -7,11 +7,13 @@ import {
   Settings,
   HelpCircle,
   Wallet,
-  Ticket
+  Ticket,
+  Bell
 } from 'lucide-react';
 import api from '../../constants/API/axiosInstance';
 import logoImage from '../../assets/SD-2.jpg';
 import ChangePasswordModal from './ChangePasswordModal';
+import { ALERTS_CHANGED_EVENT } from '../Admin/monitoringEvents';
 
 const Header = ({ userType }) => {
   const [profileData, setProfileData] = useState(null);
@@ -19,6 +21,7 @@ const Header = ({ userType }) => {
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [openAlertCount, setOpenAlertCount] = useState(0);
 
   const userEmail = localStorage.getItem("userEmail") || "";
 
@@ -76,6 +79,37 @@ const Header = ({ userType }) => {
     fetchProfile();
   }, [userType]);
 
+  // Transaction Monitoring open-alert badge — admin/super_admin only.
+  // Polls rather than pushing; fine at current alert volume, and avoids
+  // adding any new realtime infrastructure for a badge count.
+  useEffect(() => {
+    if (!["admin", "super_admin"].includes(userType)) return;
+
+    const fetchOpenAlertCount = async () => {
+      try {
+        const res = await api.get('/monitoring/dashboard');
+        setOpenAlertCount(res.data?.openAlertsTotal ?? 0);
+      } catch (err) {
+        // Non-critical — don't surface an error toast for a header badge.
+        console.error('Failed to fetch open alert count:', err);
+      }
+    };
+
+    fetchOpenAlertCount();
+    const interval = setInterval(fetchOpenAlertCount, 30000);
+
+    // Immediate refresh when an alert is acknowledged/resolved from the
+    // Transaction Monitoring page, instead of waiting up to 30s for the
+    // next poll tick — the interval above stays as a fallback (also picks
+    // up new alerts the backend's own rule sweep raises on its own).
+    window.addEventListener(ALERTS_CHANGED_EVENT, fetchOpenAlertCount);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(ALERTS_CHANGED_EVENT, fetchOpenAlertCount);
+    };
+  }, [userType]);
+
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userType');
@@ -124,7 +158,9 @@ const Header = ({ userType }) => {
       '/dashboard/bill-payment': 'Bill Pay',
       '/dashboard/bill-payment/transaction': 'Transaction Status',
       '/dashboard/bill-payment/complaint': 'Raise Complaint',
-      '/dashboard/bill-payment/complaint-status': 'Complaint Status'
+      '/dashboard/bill-payment/complaint-status': 'Complaint Status',
+      '/dashboard/monitoring': 'Transaction Monitoring',
+      '/dashboard/monitoring/rules': 'Monitoring Rules'
     };
     return routeTitles[path] || 'Supply Chain Management';
   };
@@ -156,7 +192,9 @@ const Header = ({ userType }) => {
       'bill-payment': 'Bharat Bill',
       transaction: 'Transaction Status',
       complaint: 'Raise Complaint',
-      'complaint-status': 'Complaint Status'
+      'complaint-status': 'Complaint Status',
+      monitoring: 'Transaction Monitoring',
+      rules: 'Rules'
     };
 
     return segments.map(seg => breadcrumbMap[seg] || seg).join(' > ');
@@ -185,6 +223,22 @@ const Header = ({ userType }) => {
 
           {/* Right Section */}
           <div className="flex items-center space-x-4">
+            {/* Transaction Monitoring alert bell — admin/super_admin only */}
+            {["admin", "super_admin"].includes(userType) && (
+              <Link
+                to="/dashboard/monitoring"
+                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Transaction Monitoring alerts"
+              >
+                <Bell className="h-5 w-5 text-gray-600" />
+                {openAlertCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {openAlertCount > 99 ? '99+' : openAlertCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {/* Wallet only for merchant/franchise */}
             {(userType === 'merchant' || userType === 'franchise') &&
               profileData?.walletBalance !== undefined && (
