@@ -8,18 +8,24 @@ import bAssuredLogoReverse from "../../assets/bbps-brand/b-assured-logo-reverse.
 
 /**
  * Official Bharat Connect brand marks (from the NPCI brand guidelines kit).
- * Fixed height per the frontend demo spec's "exactly 35px" note — same
- * markup/size on every screen the mark appears on, never re-sized per screen.
+ * Each mark has its own fixed, reviewer-specified box size — same size on
+ * every screen it appears on, never re-sized per screen:
+ *   - Bharat Connect (horizontal) logo: 83 x 30 px
+ *   - B Assured logo: 130 x 120 px
+ *   - B mnemonic: no reviewer-specified box yet, kept at the original 35px
+ *     height / auto width used elsewhere.
+ * The box is a bounding box, not a forced stretch — object-fit: contain
+ * scales the artwork proportionally within it instead of distorting it,
+ * since none of these marks' native SVG proportions exactly match the
+ * specified box ratio.
  * Pass `reverse` to use the white variant on a dark background.
  */
-const LOGO_HEIGHT = 35;
-
 export const BharatConnectLogo = ({ className = "", reverse = false }) => (
   <img
     src={reverse ? bharatConnectLogoReverse : bharatConnectLogo}
     alt="Bharat Connect"
     className={className}
-    style={{ height: LOGO_HEIGHT, width: "auto" }}
+    style={{ width: 83, height: 30, objectFit: "contain" }}
   />
 );
 
@@ -28,7 +34,7 @@ export const BMnemonicLogo = ({ className = "", reverse = false }) => (
     src={reverse ? bMnemonicLogoReverse : bMnemonicLogo}
     alt="Bharat Connect"
     className={className}
-    style={{ height: LOGO_HEIGHT, width: "auto" }}
+    style={{ height: 35, width: "auto" }}
   />
 );
 
@@ -37,6 +43,6 @@ export const BeAssuredLogo = ({ className = "", reverse = false }) => (
     src={reverse ? bAssuredLogoReverse : bAssuredLogo}
     alt="B Assured"
     className={className}
-    style={{ height: LOGO_HEIGHT, width: "auto" }}
+    style={{ width: 130, height: 120, objectFit: "contain" }}
   />
 );

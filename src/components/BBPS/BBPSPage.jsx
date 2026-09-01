@@ -316,14 +316,14 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
               <p className="text-xs text-gray-400 font-mono">B-Connect Txn ID: {receipt.txnRefId}</p>
             </div>
           ) : receipt ? (
-            /* ── Stage-3, screen 2: itemized receipt — B Assured logo top-left
-               corner, per brand guidelines ("optimum visibility" on the receipt). ── */
+            /* ── Stage-3, screen 2: itemized receipt — B Assured logo top-right
+               corner, per reviewer direction, with optimum visibility. ── */
             <div>
               <div className="flex items-center justify-between mb-2">
-                <BeAssuredLogo />
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                   {receipt.status}
                 </span>
+                <BeAssuredLogo />
               </div>
               <div className="border border-gray-100 rounded-xl px-4 mt-3">
                 <ReceiptRow label="B-Connect Txn ID" value={receipt.txnRefId} mono />
