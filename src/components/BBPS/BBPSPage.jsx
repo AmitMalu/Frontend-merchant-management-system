@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MdChevronLeft, MdClose } from "react-icons/md";
 import { BBPS_SERVICES, fetchBillerInfo, fetchBillDetails, mapDataTypeToInputType, getUatSample, payBill } from "./bbpsServices";
-import { BharatConnectLogo, BeAssuredLogo, BMnemonicLogo } from "./brandLogos";
+import { BharatConnectLogo, BeAssuredLogo } from "./brandLogos";
 import { sendTransactionSuccessSms } from "./smsService";
 import bharatConnectSonic from "../../assets/bbps-brand/bharat-connect-sonic.mp3";
 import api from "../../constants/API/axiosInstance";
@@ -12,8 +12,11 @@ const VENDOR_NAME = "Bill Avenue";
 // ─── Top bar ──────────────────────────────────────────────────────────────────
 // Bharat Connect logo: fixed top-right, same size/markup on every screen
 // (Biller Selection, Bill Fetch, Bill Payment) per brand guidelines.
-// B mnemonic: left-aligned, directly below the title row, on every screen.
-export const TopBar = ({ title, onBack, showBack = true }) => (
+// B Assured logo: per support team direction (2026-09-04 email), it should
+// ONLY appear on "Transaction Successful" and "Transaction Status" — never on
+// every screen — so it's opt-in here via `showBAssured`, passed only by the
+// Transaction Status page.
+export const TopBar = ({ title, onBack, showBack = true, showBAssured = false }) => (
   <div className="bg-white border-b border-gray-200 shadow-sm">
     <div className="flex items-center justify-between px-6 py-4">
       <div className="flex items-center gap-2">
@@ -26,10 +29,11 @@ export const TopBar = ({ title, onBack, showBack = true }) => (
       </div>
       <BharatConnectLogo />
     </div>
-    <div className="flex flex-col items-start px-6 pb-3">
-      <BMnemonicLogo className="h-12 w-auto" />
-      <span className="mt-2 text-sm font-bold text-gray-700 tracking-wide">Bill Payment</span>
-    </div>
+    {showBAssured && (
+      <div className="flex flex-col items-start px-6 pb-3">
+        <BeAssuredLogo />
+      </div>
+    )}
   </div>
 );
 
@@ -282,14 +286,15 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
         {/* Sonic branding — plays alongside the B Assured display on payment success */}
         <audio ref={sonicRef} src={bharatConnectSonic} preload="auto" />
 
-        {/* Modal header — Bharat Connect logo (Bill Details) or Be-Assured logo (Coming Soon placeholder).
-            The real receipt carries its own B Assured logo top-left, per brand guidelines, not the header. */}
+        {/* Modal header — Bharat Connect logo. B Assured is intentionally not
+            shown here (support direction: only on Transaction Successful and
+            Transaction Status). */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800">
             {receipt ? (showReceiptDetails ? "Bill Pay Receipt" : "Payment Confirmation") : "Bill Details"}
           </h2>
           <div className="flex items-center gap-3">
-            {!receipt && (comingSoon ? <BeAssuredLogo /> : <BharatConnectLogo />)}
+            {!receipt && <BharatConnectLogo />}
             <button
               onClick={onClose}
               className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
@@ -316,14 +321,14 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
               <p className="text-xs text-gray-400 font-mono">B-Connect Txn ID: {receipt.txnRefId}</p>
             </div>
           ) : receipt ? (
-            /* ── Stage-3, screen 2: itemized receipt — B Assured logo top-right
-               corner, per reviewer direction, with optimum visibility. ── */
+            /* ── Stage-3, screen 2: itemized receipt. No B Assured logo here
+               — support direction restricts it to Transaction Successful and
+               Transaction Status only. ── */
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                   {receipt.status}
                 </span>
-                <BeAssuredLogo />
               </div>
               <div className="border border-gray-100 rounded-xl px-4 mt-3">
                 <ReceiptRow label="B-Connect Txn ID" value={receipt.txnRefId} mono />
