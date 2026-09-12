@@ -14,7 +14,7 @@ import { Component } from 'react';
 class ChunkErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, reloadAttempted: false };
+    this.state = { hasError: false, isChunkError: false };
   }
 
   static getDerivedStateFromError(error) {
@@ -33,11 +33,14 @@ class ChunkErrorBoundary extends Component {
         return null;
       }
 
-      return { hasError: true, reloadAttempted: true };
+      return { hasError: true, isChunkError: true };
     }
 
-    // Not a chunk error — let it propagate normally
-    return { hasError: true, reloadAttempted: false };
+    // A real app error, not a stale-deploy chunk failure — must NOT show the
+    // "New version available" message, since refreshing won't fix it and the
+    // wrong message hides a genuine bug (this previously masked a React #31
+    // crash as a deploy issue).
+    return { hasError: true, isChunkError: false };
   }
 
   componentDidCatch(error, info) {
@@ -56,22 +59,45 @@ class ChunkErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      if (this.state.isChunkError) {
+        return (
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+            <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 text-center">
+              <div className="text-5xl mb-4">🔄</div>
+              <h1 className="text-xl font-bold text-gray-800 mb-2">
+                New version available
+              </h1>
+              <p className="text-gray-500 text-sm mb-6">
+                The application has been updated. Please refresh the page to
+                load the latest version.
+              </p>
+              <button
+                onClick={this.handleManualReload}
+                className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+              >
+                Refresh Now
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
           <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 text-center">
-            <div className="text-5xl mb-4">🔄</div>
+            <div className="text-5xl mb-4">⚠️</div>
             <h1 className="text-xl font-bold text-gray-800 mb-2">
-              New version available
+              Something went wrong
             </h1>
             <p className="text-gray-500 text-sm mb-6">
-              The application has been updated. Please refresh the page to
-              load the latest version.
+              An unexpected error occurred. Please try again, and contact
+              support if the problem continues.
             </p>
             <button
               onClick={this.handleManualReload}
               className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
             >
-              Refresh Now
+              Reload Page
             </button>
           </div>
         </div>

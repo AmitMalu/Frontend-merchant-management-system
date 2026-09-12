@@ -11,7 +11,8 @@ import bAssuredLogoReverse from "../../assets/bbps-brand/b-assured-logo-reverse.
  * Each mark has its own fixed, reviewer-specified box size — same size on
  * every screen it appears on, never re-sized per screen:
  *   - Bharat Connect (horizontal) logo: 83 x 30 px
- *   - B Assured logo: 130 x 120 px
+ *   - B Assured logo: 130 x 120 px default (width/height overridable per
+ *     screen — e.g. the Bill Pay Receipt screen uses a slightly larger size)
  *   - B mnemonic: no reviewer-specified box yet, kept at the original 35px
  *     height / auto width used elsewhere.
  * The box is a bounding box, not a forced stretch — object-fit: contain
@@ -38,11 +39,11 @@ export const BMnemonicLogo = ({ className = "", reverse = false }) => (
   />
 );
 
-export const BeAssuredLogo = ({ className = "", reverse = false }) => (
+export const BeAssuredLogo = ({ className = "", reverse = false, width = 130, height = 120 }) => (
   <img
     src={reverse ? bAssuredLogoReverse : bAssuredLogo}
     alt="B Assured"
     className={className}
-    style={{ width: 130, height: 120, objectFit: "contain" }}
+    style={{ width, height, objectFit: "contain" }}
   />
 );

@@ -162,7 +162,7 @@ const TransactionStatusPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <TopBar title="Transaction Status" onBack={() => navigate(-1)} showBAssured />
+      <TopBar title="Transaction Status" onBack={() => navigate(-1)} />
 
       <div className="flex-1 px-6 py-8">
         <div className="max-w-4xl bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-5">

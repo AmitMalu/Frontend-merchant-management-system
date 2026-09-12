@@ -11,12 +11,10 @@ const VENDOR_NAME = "Bill Avenue";
 
 // ─── Top bar ──────────────────────────────────────────────────────────────────
 // Bharat Connect logo: fixed top-right, same size/markup on every screen
-// (Biller Selection, Bill Fetch, Bill Payment) per brand guidelines.
-// B Assured logo: per support team direction (2026-09-04 email), it should
-// ONLY appear on "Transaction Successful" and "Transaction Status" — never on
-// every screen — so it's opt-in here via `showBAssured`, passed only by the
-// Transaction Status page.
-export const TopBar = ({ title, onBack, showBack = true, showBAssured = false }) => (
+// (Biller Selection, Bill Fetch, Bill Payment, Transaction Status) per brand
+// guidelines. No B Assured logo here — reviewer direction restricts it to the
+// Payment Successful and Bill Pay Receipt screens only.
+export const TopBar = ({ title, onBack, showBack = true }) => (
   <div className="bg-white border-b border-gray-200 shadow-sm">
     <div className="flex items-center justify-between px-6 py-4">
       <div className="flex items-center gap-2">
@@ -29,11 +27,6 @@ export const TopBar = ({ title, onBack, showBack = true, showBAssured = false })
       </div>
       <BharatConnectLogo />
     </div>
-    {showBAssured && (
-      <div className="flex flex-col items-start px-6 pb-3">
-        <BeAssuredLogo />
-      </div>
-    )}
   </div>
 );
 
@@ -269,18 +262,28 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
   const dueAmountRupees  = billerResp.billAmount ? Number(billerResp.billAmount) / 100 : null;
   const { min, max }     = getConstraints();
 
+  // Some billers return a nested object/array for a field instead of a plain
+  // string (seen live: a customer-info block nested under one key) — React
+  // crashes if that's rendered directly as a child, so flatten it to a safe
+  // string here rather than passing the raw value through.
+  const toDisplayValue = (v) => {
+    if (v === null || v === undefined) return v;
+    if (typeof v === "object") return JSON.stringify(v);
+    return v;
+  };
+
   // Merge inputEcho + billerRespFields + additionalInfo into a flat read-only grid
   const readOnlyRows = [
-    ...inputEcho.map((i) => ({ label: i.paramName, value: i.paramValue })),
+    ...inputEcho.map((i) => ({ label: i.paramName, value: toDisplayValue(i.paramValue) })),
     ...billerRespFields.map(([k, v]) => ({
       label: k.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase()).trim(),
-      value: v,
+      value: toDisplayValue(v),
     })),
-    ...additionalInfo.map((i) => ({ label: i.infoName, value: i.infoValue })),
+    ...additionalInfo.map((i) => ({ label: i.infoName, value: toDisplayValue(i.infoValue) })),
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-lg flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
 
         {/* Sonic branding — plays alongside the B Assured display on payment success */}
@@ -321,14 +324,14 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
               <p className="text-xs text-gray-400 font-mono">B-Connect Txn ID: {receipt.txnRefId}</p>
             </div>
           ) : receipt ? (
-            /* ── Stage-3, screen 2: itemized receipt. No B Assured logo here
-               — support direction restricts it to Transaction Successful and
-               Transaction Status only. ── */
+            /* ── Stage-3, screen 2: itemized receipt — B Assured logo top-right,
+               slightly larger here per reviewer direction. ── */
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                   {receipt.status}
                 </span>
+                <BeAssuredLogo width={150} height={140} />
               </div>
               <div className="border border-gray-100 rounded-xl px-4 mt-3">
                 <ReceiptRow label="B-Connect Txn ID" value={receipt.txnRefId} mono />
