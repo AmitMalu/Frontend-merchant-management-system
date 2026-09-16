@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MdChevronLeft, MdClose } from "react-icons/md";
 import { BBPS_SERVICES, fetchBillerInfo, fetchBillDetails, mapDataTypeToInputType, getUatSample, payBill } from "./bbpsServices";
-import { BharatConnectLogo, BeAssuredLogo } from "./brandLogos";
+import { BharatConnectLogo, BeAssuredLogo, BMnemonicLogo } from "./brandLogos";
 import { sendTransactionSuccessSms } from "./smsService";
 import bharatConnectSonic from "../../assets/bbps-brand/bharat-connect-sonic.mp3";
 import api from "../../constants/API/axiosInstance";
@@ -12,8 +12,10 @@ const VENDOR_NAME = "Bill Avenue";
 // ─── Top bar ──────────────────────────────────────────────────────────────────
 // Bharat Connect logo: fixed top-right, same size/markup on every screen
 // (Biller Selection, Bill Fetch, Bill Payment, Transaction Status) per brand
-// guidelines. No B Assured logo here — reviewer direction restricts it to the
-// Payment Successful and Bill Pay Receipt screens only.
+// guidelines. B mnemonic + "Bill Payment" label: left-aligned, below the title
+// row, on every screen — per vendor (Bill Avenue) BBPS UAT review email
+// (2026-09-15). No B Assured logo here — restricted to the Payment Successful
+// and Bill Pay Receipt screens only.
 export const TopBar = ({ title, onBack, showBack = true }) => (
   <div className="bg-white border-b border-gray-200 shadow-sm">
     <div className="flex items-center justify-between px-6 py-4">
@@ -26,6 +28,10 @@ export const TopBar = ({ title, onBack, showBack = true }) => (
         <span className="text-lg font-bold text-gray-800">{title}</span>
       </div>
       <BharatConnectLogo />
+    </div>
+    <div className="flex flex-col items-start px-6 pb-3">
+      <BMnemonicLogo className="h-12 w-auto" />
+      <span className="mt-2 text-sm font-bold text-gray-700 tracking-wide">Bill Payment</span>
     </div>
   </div>
 );
@@ -312,10 +318,13 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
 
           {receipt && !showReceiptDetails ? (
             /* ── Stage-3, screen 1: Payment Successful confirmation — B Assured
-               logo on a white background, per brand guidelines. Sonic branding
-               plays alongside this screen (triggered in handlePay/handleSamplePay). ── */
-            <div className="flex flex-col items-center justify-center py-10 gap-4 bg-white">
-              <BeAssuredLogo />
+               logo top-right of the screen, per vendor (Bill Avenue) BBPS UAT
+               review email (2026-09-15). Sonic branding plays alongside this
+               screen (triggered in handlePay/handleSamplePay). ── */
+            <div className="flex flex-col items-center justify-center py-10 gap-4 bg-white relative">
+              <div className="absolute top-0 right-0">
+                <BeAssuredLogo />
+              </div>
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-4xl">✓</div>
               <h3 className="text-2xl font-bold text-gray-800 tracking-wide">Payment Successful</h3>
               <p className="text-sm text-gray-500">

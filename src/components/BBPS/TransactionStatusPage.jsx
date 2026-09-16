@@ -69,7 +69,7 @@ const TransactionStatusPage = () => {
   // ── Live search — calls the real /billpay/config/transaction-status endpoint ──
   const handleRefIdSearch = async () => {
     if (!refId.trim()) {
-      toast.error("Enter a B-Connect Txn Ref ID");
+      toast.error("Enter a B-Connect Txn ID");
       return;
     }
     setSearching(true);
@@ -94,7 +94,7 @@ const TransactionStatusPage = () => {
   // 🧪 UAT ONLY — remove once live confirmed
   const handleSampleRefIdSearch = () => {
     if (!refId.trim()) {
-      toast.error("Enter a B-Connect Txn Ref ID");
+      toast.error("Enter a B-Connect Txn ID");
       return;
     }
     setSearching(true);
@@ -174,7 +174,7 @@ const TransactionStatusPage = () => {
             </label>
             <div className="flex flex-wrap gap-3">
               {[
-                { value: "REF_ID", label: "B-Connect Txn Ref ID" },
+                { value: "REF_ID", label: "B-Connect Txn ID" },
                 { value: "MOBILE", label: "Mobile Number & Date Range" },
               ].map((opt) => (
                 <label
@@ -204,7 +204,7 @@ const TransactionStatusPage = () => {
               <div className="flex flex-wrap items-end gap-3">
                 <div className="min-w-[260px]">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    B-Connect Txn Ref ID <span className="text-red-500">*</span>
+                    B-Connect Txn ID <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
