@@ -11,7 +11,7 @@ const SEVERITY_STYLES = {
     LOW: 'bg-blue-100 text-blue-800 border-blue-200',
 };
 
-const SOURCE_TYPES = ['PAYOUT', 'PAYOUT_REFUND', 'BBPS', 'BBPS_REFUND', 'SETTLEMENT', 'COMMISSION', 'WALLET_ADJUSTMENT'];
+const SOURCE_TYPES = ['PAYOUT', 'PAYOUT_REFUND', 'BBPS', 'BBPS_REFUND', 'SETTLEMENT', 'COMMISSION', 'WALLET_ADJUSTMENT', 'CARD_TRANSACTION'];
 
 // Which parameter fields a rule form should show, per rule type — mirrors
 // exactly what RuleEvaluationService reads out of MonitoringRule.parameters.
@@ -26,6 +26,12 @@ const RULE_TYPE_PARAM_FIELDS = {
         { key: 'maxFailures', label: 'Max Failures Allowed', placeholder: 'e.g. 3' },
     ],
     STUCK_PENDING: [{ key: 'stuckMinutes', label: 'Stuck After (minutes)', placeholder: 'e.g. 30' }],
+    // Risk SOP Rule 1 — same card (BIN + last 4) used more than maxCount
+    // times within windowMinutes, across POS/card transactions.
+    CARD_VELOCITY: [
+        { key: 'windowMinutes', label: 'Window (minutes)', placeholder: 'e.g. 1440 (24h)' },
+        { key: 'maxCount', label: 'Max Transactions per Card', placeholder: 'e.g. 2' },
+    ],
 };
 
 const EMPTY_RULE_FORM = {
@@ -285,6 +291,7 @@ const MonitoringRules = () => {
                                         <option value="VELOCITY">Velocity</option>
                                         <option value="FAILURE_RATE">Failure Rate</option>
                                         <option value="STUCK_PENDING">Stuck Pending</option>
+                                        <option value="CARD_VELOCITY">Card Velocity</option>
                                     </select>
                                 </div>
                                 <div>

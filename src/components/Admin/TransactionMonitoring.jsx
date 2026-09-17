@@ -9,6 +9,7 @@ import {
     RefreshCw,
     Download,
     Search,
+    Lock,
 } from 'lucide-react';
 import api from '../../constants/API/axiosInstance';
 import { notifyAlertsChanged } from './monitoringEvents';
@@ -189,6 +190,12 @@ const TransactionMonitoring = () => {
                     <p className="text-gray-600 mt-1">Fraud alerts, stuck transactions, and cross-rail transaction health</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Link
+                        to="/dashboard/monitoring/held-transactions"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                    >
+                        <Lock className="w-4 h-4" /> Held Transactions
+                    </Link>
                     <Link
                         to="/dashboard/monitoring/rules"
                         className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"

@@ -30,6 +30,7 @@ const WalletAdjustment = lazy(() => import('../../components/Admin/WalletAdjustm
 const ChangePassword = lazy(() => import('../../components/Admin/ChangePassword.jsx'));
 const TransactionMonitoring = lazy(() => import('../../components/Admin/TransactionMonitoring.jsx'));
 const MonitoringRules = lazy(() => import('../../components/Admin/MonitoringRules.jsx'));
+const HeldTransactions = lazy(() => import('../../components/Admin/HeldTransactions.jsx'));
 const ProductDistributionList = lazy(() => import('../../components/Tables/ProductDistributionList.jsx'));
 const FranchiseReports = lazy(() => import('../../components/Reports/FranchiseReports.jsx'));
 const VendorReports = lazy(() => import('../../components/Reports/VendorReports.jsx'));
@@ -74,6 +75,10 @@ export const adminRoutes = [
   {
     path: "monitoring/rules",
     element: <MonitoringRules />
+  },
+  {
+    path: "monitoring/held-transactions",
+    element: <HeldTransactions />
   },
   {
     path: "logs",

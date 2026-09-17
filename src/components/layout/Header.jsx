@@ -160,7 +160,8 @@ const Header = ({ userType }) => {
       '/dashboard/bill-payment/complaint': 'Raise Complaint',
       '/dashboard/bill-payment/complaint-status': 'Complaint Status',
       '/dashboard/monitoring': 'Transaction Monitoring',
-      '/dashboard/monitoring/rules': 'Monitoring Rules'
+      '/dashboard/monitoring/rules': 'Monitoring Rules',
+      '/dashboard/monitoring/held-transactions': 'Held Transactions'
     };
     return routeTitles[path] || 'Supply Chain Management';
   };
@@ -194,7 +195,8 @@ const Header = ({ userType }) => {
       complaint: 'Raise Complaint',
       'complaint-status': 'Complaint Status',
       monitoring: 'Transaction Monitoring',
-      rules: 'Rules'
+      rules: 'Rules',
+      'held-transactions': 'Held Transactions'
     };
 
     return segments.map(seg => breadcrumbMap[seg] || seg).join(' > ');
