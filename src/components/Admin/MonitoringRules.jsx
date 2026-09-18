@@ -32,6 +32,13 @@ const RULE_TYPE_PARAM_FIELDS = {
         { key: 'windowMinutes', label: 'Window (minutes)', placeholder: 'e.g. 1440 (24h)' },
         { key: 'maxCount', label: 'Max Transactions per Card', placeholder: 'e.g. 2' },
     ],
+    // Risk SOP Rule 2 — one terminal's (TID) transactions total more than
+    // maxDailyAmount on a calendar day.
+    TID_VOLUME_CAP: [{ key: 'maxDailyAmount', label: 'Max Amount per Terminal/Day (₹)', placeholder: 'e.g. 500000' }],
+    // Risk SOP Rule 3 — informational only, never holds anything. A merchant
+    // with minCount+ transactions of the exact same amount in a day gets a
+    // heads-up alert nudging reconciliation to check txn ID/RRN, not amount.
+    REPEATED_AMOUNT_PATTERN: [{ key: 'minCount', label: 'Min Repeated Transactions', placeholder: 'e.g. 3' }],
 };
 
 const EMPTY_RULE_FORM = {
@@ -292,6 +299,8 @@ const MonitoringRules = () => {
                                         <option value="FAILURE_RATE">Failure Rate</option>
                                         <option value="STUCK_PENDING">Stuck Pending</option>
                                         <option value="CARD_VELOCITY">Card Velocity</option>
+                                        <option value="TID_VOLUME_CAP">Terminal Volume Cap</option>
+                                        <option value="REPEATED_AMOUNT_PATTERN">Repeated Amount Pattern</option>
                                     </select>
                                 </div>
                                 <div>
