@@ -344,6 +344,7 @@ const ProductMasterForm = ({ onSubmit, onCancel, initialData = null, isEdit = fa
       let categoryName, categoryId;
       if (data.productCategoryId === 'new') {
         categoryName = data.newCategoryName;
+        categoryId = null; // backend resolves/creates the category by name when id is absent
       } else {
         // Find the selected category name from categories array
         const selectedCategory = categories.find(cat => cat.value === data.productCategoryId);
@@ -355,7 +356,7 @@ const ProductMasterForm = ({ onSubmit, onCancel, initialData = null, isEdit = fa
       const transformedData = {
         productName: data.productName,
         vendor: { id: Number(data.vendorId) },
-        productCategory: { id: Number(categoryId),categoryName: categoryName },
+        productCategory: { id: categoryId != null ? Number(categoryId) : null, categoryName: categoryName },
         model: data.model,
         brand: data.brand,
         description: data.description,
