@@ -442,7 +442,7 @@ const MERCHANT_MENU_CONFIG = [
     ]
   },
   {
-    title: 'Bharat Bill',
+    title: 'Bill Payment',
     key: MENU_KEYS.BILL_PAYMENT,
     icon: BMnemonicIcon,
     iconColor: '',

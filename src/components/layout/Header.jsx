@@ -190,7 +190,7 @@ const Header = ({ userType }) => {
       'admin-approval': 'Approval',
       upload: 'Upload',
       charges: 'Charges',
-      'bill-payment': 'Bharat Bill',
+      'bill-payment': 'Bill Payment',
       transaction: 'Transaction Status',
       complaint: 'Raise Complaint',
       'complaint-status': 'Complaint Status',
