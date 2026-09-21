@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { Wallet, ArrowUpCircle, ArrowDownCircle, RefreshCw } from 'lucide-react';
 import api from '../../constants/API/axiosInstance';
+import { notifyWalletBalanceChanged } from '../layout/walletEvents';
 
 // Franchise-only "Push/Pull Wallet" (Credit/Debit Wallet). Credit moves money
 // out of the franchise's own wallet into a merchant's wallet; Debit pulls it
@@ -91,6 +92,11 @@ const CreditDebitWallet = () => {
       // the clearest possible signal to the user that the money actually
       // moved (both numbers visibly change on screen).
       await Promise.all([fetchProfile(), fetchMerchants()]);
+
+      // The header shows this same franchise wallet balance independently
+      // (its own fetch, own state) — nudge it to refresh too, instead of
+      // leaving it stale until the next page reload.
+      notifyWalletBalanceChanged();
 
       toast.success(`${action === 'CREDIT' ? 'Credited' : 'Debited'} ₹${Number(amount).toLocaleString('en-IN')} ${action === 'CREDIT' ? 'to' : 'from'} ${selectedMerchant.businessName}`);
       setConfirming(false);
