@@ -31,7 +31,8 @@ const FranchiseTransactionReport = ({ filters: commonFilters, isFranchise }) => 
                 endDate: `${localFilters.endDate}T23:59:59`,
                 status: 'SETTLED',
                 dateFilterType: localFilters.dateFilterType,
-                ...(localFilters.transactionType !== 'All' && { transactionType: localFilters.transactionType })
+                ...(localFilters.transactionType !== 'All' && { transactionType: localFilters.transactionType }),
+                ...(localFilters.service && { service: localFilters.service })
             };
 
             if (localFilters.selectedFranchise === 'ALL') {
@@ -178,6 +179,14 @@ const FranchiseTransactionReport = ({ filters: commonFilters, isFranchise }) => 
                 header: 'Service',
                 cell: info => <span className="text-xs text-gray-700">{info.getValue()}</span>
             }),
+            remarks: columnHelper.accessor('remarks', {
+                header: 'Remarks',
+                cell: info => (
+                    <span className="text-xs text-gray-600 max-w-[200px] block truncate" title={info.getValue() || '-'}>
+                        {info.getValue() || '-'}
+                    </span>
+                )
+            }),
             actionOnBalance: columnHelper.accessor('actionOnBalance', {
                 header: 'Action',
                 cell: info => {
@@ -209,7 +218,7 @@ const FranchiseTransactionReport = ({ filters: commonFilters, isFranchise }) => 
     }, []);
 
     const columnPriority = [
-        'customTxnId', 'txnId', 'txnDate', 'settleDate', 'actionOnBalance', 'service', 'txnAmount',
+        'customTxnId', 'txnId', 'txnDate', 'settleDate', 'actionOnBalance', 'service', 'remarks', 'txnAmount',
         'settleAmount', 'systemFee', 'commissionAmount', 'merchantName', 'franchiseName',
         'brandType', 'cardType', 'authCode', 'tid', 'cardClassification', 'state',
         'settlementRate', 'franchiseRate', 'merchantRate', 'commissionRate'

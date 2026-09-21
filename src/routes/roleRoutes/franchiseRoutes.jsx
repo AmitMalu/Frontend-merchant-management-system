@@ -12,7 +12,7 @@ const Payout = lazy(() => import('../../components/Payout/Payout.jsx'));
 const ViewProfile = lazy(() => import('../../components/layout/ViewProfile.jsx'));
 const SupportTickets = lazy(() => import('../../components/Tables/SupportTicket.jsx'));
 const PrefundWalletForm = lazy(() => import('../../components/Tables/PrefundWalletForm.jsx'));
-const PushWalletForm = lazy(() => import('../../components/Tables/PushWalletForm.jsx'));
+const CreditDebitWallet = lazy(() => import('../../components/Tables/CreditDebitWallet.jsx'));
 
 
 export const franchiseRoutes = [
@@ -83,8 +83,8 @@ export const franchiseRoutes = [
       element: <PrefundWalletForm />
     },
     {
-      path: 'push-wallet',
-      element: <PushWalletForm />
+      path: 'credit-debit-wallet',
+      element: <CreditDebitWallet />
     }
   ]
 }

@@ -413,11 +413,11 @@ const FRANCHISE_MENU_CONFIG = [
     title: 'Funding',
     path: '/dashboard/funding',
     key: MENU_KEYS.FUNDING,
-    icon: BarChart3,
+    icon: Banknote,
     iconColor: '',
     children: [
-      { title: 'Prefund Wallet', path: '/dashboard/funding/prefund-wallet', icon: BarChart3 },
-      { title: 'Push Wallet', path: '/dashboard/funding/push-wallet', icon: BarChart3 }
+      { title: 'Prefund Wallet', path: '/dashboard/funding/prefund-wallet', icon: Banknote },
+      { title: 'Credit / Debit Wallet', path: '/dashboard/funding/credit-debit-wallet', icon: Banknote }
 
     ]
   }

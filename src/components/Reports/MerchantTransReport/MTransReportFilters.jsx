@@ -26,6 +26,18 @@ const MTransReportFilters = ({ filters, onChange, userType, reportType, onGenera
             dateFilterOptions: [
                 { value: 'SETTLEMENT_DATE', label: 'Settlement Date' },
                 { value: 'TRANSACTION_DATE', label: 'Transaction Date' }
+            ],
+            showService: true,
+            serviceOptions: [
+                { value: '', label: 'All' },
+                { value: 'Settlement', label: 'Settlement' },
+                { value: 'PAYOUT', label: 'Payout' },
+                { value: 'PAYOUT_REFUND', label: 'Payout Refund' },
+                { value: 'BBPS', label: 'BBPS' },
+                { value: 'BBPS_REFUND', label: 'BBPS Refund' },
+                { value: 'COMMISSION', label: 'Commission' },
+                { value: 'ADMIN_ADJUSTMENT', label: 'Admin Adjustment' },
+                { value: 'FRANCHISE_WALLET_TRANSFER', label: 'Credit / Debit Wallet' }
             ]
         }
         // Add more report configurations as needed
@@ -242,6 +254,25 @@ const MTransReportFilters = ({ filters, onChange, userType, reportType, onGenera
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
                             {currentConfig.transactionTypeOptions?.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+                {/* Service (transaction source) - Show based on report type */}
+                {currentConfig.showService && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Service
+                        </label>
+                        <select
+                            value={filters.service || ''}
+                            onChange={(e) => handleInputChange('service', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            {currentConfig.serviceOptions?.map(option => (
                                 <option key={option.value} value={option.value}>
                                     {option.label}
                                 </option>
