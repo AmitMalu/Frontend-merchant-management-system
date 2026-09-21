@@ -14,6 +14,7 @@ import api from '../../constants/API/axiosInstance';
 import logoImage from '../../assets/SD-2.jpg';
 import ChangePasswordModal from './ChangePasswordModal';
 import { ALERTS_CHANGED_EVENT } from '../Admin/monitoringEvents';
+import { WALLET_BALANCE_CHANGED_EVENT } from './walletEvents';
 
 const Header = ({ userType }) => {
   const [profileData, setProfileData] = useState(null);
@@ -77,6 +78,15 @@ const Header = ({ userType }) => {
 
   useEffect(() => {
     fetchProfile();
+  }, [userType]);
+
+  // Refresh the header's wallet balance immediately when a credit/debit
+  // transfer completes elsewhere (e.g. the franchise Credit/Debit Wallet
+  // page), instead of only updating on next login/page reload.
+  useEffect(() => {
+    const handleWalletBalanceChanged = () => fetchProfile();
+    window.addEventListener(WALLET_BALANCE_CHANGED_EVENT, handleWalletBalanceChanged);
+    return () => window.removeEventListener(WALLET_BALANCE_CHANGED_EVENT, handleWalletBalanceChanged);
   }, [userType]);
 
   // Transaction Monitoring open-alert badge — admin/super_admin only.
