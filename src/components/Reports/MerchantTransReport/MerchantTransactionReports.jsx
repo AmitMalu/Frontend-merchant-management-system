@@ -36,6 +36,7 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
                 status: 'SETTLED',
                 dateFilterType: localFilters.dateFilterType,
                 ...(localFilters.transactionType !== 'All' && { transactionType: localFilters.transactionType }),
+                ...(localFilters.service && { service: localFilters.service }),
             };
 
             // If "ALL" is selected, directly trigger export instead of paginated fetch
@@ -122,6 +123,7 @@ const MerchantTransactionReports = ({ filters: commonFilters, userType }) => {
                 status: 'SETTLED',
                 dateFilterType: localFilters.dateFilterType,
                 ...(localFilters.transactionType !== 'All' && { transactionType: localFilters.transactionType }),
+                ...(localFilters.service && { service: localFilters.service }),
                 includeTaxes: false,
             };
 
