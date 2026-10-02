@@ -253,6 +253,7 @@ const PayoutTransactionsReport = () => {
             <option value="BOTH">All</option>
             <option value="PAYOUT">Payout</option>
             <option value="PAYOUT_REFUND">Refund</option>
+            <option value="FAILED">Failed</option>
           </select>
         </div>
 

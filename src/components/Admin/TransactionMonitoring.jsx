@@ -52,6 +52,7 @@ const TransactionMonitoring = () => {
     const [loadingAlerts, setLoadingAlerts] = useState(true);
     const [statusFilter, setStatusFilter] = useState('OPEN');
     const [severityFilter, setSeverityFilter] = useState('');
+    const [sourceFilter, setSourceFilter] = useState('');
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [merchantSearchInput, setMerchantSearchInput] = useState('');
@@ -93,6 +94,7 @@ const TransactionMonitoring = () => {
             const params = { page, size: pageSize };
             if (statusFilter) params.status = statusFilter;
             if (severityFilter) params.severity = severityFilter;
+            if (sourceFilter) params.sourceType = sourceFilter;
             if (fromDate) params.startDate = `${fromDate}T00:00:00`;
             if (toDate) params.endDate = `${toDate}T23:59:59`;
             if (merchantSearch) params.merchant = merchantSearch;
@@ -104,7 +106,7 @@ const TransactionMonitoring = () => {
         } finally {
             setLoadingAlerts(false);
         }
-    }, [page, pageSize, statusFilter, severityFilter, fromDate, toDate, merchantSearch]);
+    }, [page, pageSize, statusFilter, severityFilter, sourceFilter, fromDate, toDate, merchantSearch]);
 
     useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
     useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
@@ -155,6 +157,7 @@ const TransactionMonitoring = () => {
             const params = {};
             if (statusFilter) params.status = statusFilter;
             if (severityFilter) params.severity = severityFilter;
+            if (sourceFilter) params.sourceType = sourceFilter;
             if (fromDate) params.startDate = `${fromDate}T00:00:00`;
             if (toDate) params.endDate = `${toDate}T23:59:59`;
             if (merchantSearch) params.merchant = merchantSearch;
@@ -306,6 +309,21 @@ const TransactionMonitoring = () => {
                             <option value="HIGH">High</option>
                             <option value="MEDIUM">Medium</option>
                             <option value="LOW">Low</option>
+                        </select>
+                        <select
+                            value={sourceFilter}
+                            onChange={(e) => { setSourceFilter(e.target.value); setPage(0); }}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="">All Sources</option>
+                            <option value="PAYOUT">Payout</option>
+                            <option value="PAYOUT_REFUND">Payout Refund</option>
+                            <option value="BBPS">BBPS</option>
+                            <option value="BBPS_REFUND">BBPS Refund</option>
+                            <option value="SETTLEMENT">Settlement</option>
+                            <option value="COMMISSION">Commission</option>
+                            <option value="WALLET_ADJUSTMENT">Wallet Adjustment</option>
+                            <option value="CARD_TRANSACTION">Card Transaction</option>
                         </select>
                         <div className="relative">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
