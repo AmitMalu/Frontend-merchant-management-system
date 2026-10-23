@@ -176,6 +176,15 @@ const Payout = () => {
                 </button>
             </div>
 
+            <div className="bg-red-50 border border-red-300 rounded p-3 mb-4">
+                <p className="text-red-700 text-sm font-semibold">Important: Current accounts are not allowed</p>
+                <p className="text-red-600 text-xs mt-1">
+                    Payouts to a current account may attract charges or the amount may be locked. Transfer only to a personal
+                    Savings Account. Payouts to accounts whose holder name looks like a business will be blocked, and a current
+                    account saved under a personal name cannot be detected by us, so any charges or locked amount will be your responsibility.
+                </p>
+            </div>
+
             {loading ? (
                 <div className="flex justify-center items-center h-64">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>

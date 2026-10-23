@@ -98,11 +98,12 @@ const AddBankModal = ({ isOpen, onClose, onBankAdded }) => {
         } catch (error) {
             // Handle different types of errors
             if (error.response?.status === 400) {
-                toast.error(error.response.data.message || 'Invalid bank details. Please check and try again.');
+                toast.error(error.response.data.message || error.response.data.error || 'Invalid bank details. Please check and try again.');
             } else if (error.response?.status === 402) {
                 toast.error('Insufficient wallet balance. Minimum ₹1 required for bank verification.');
             } else if (error.response?.status === 422) {
-                toast.error('Bank verification failed. Please check your bank details.');
+                // Includes the "current account / business name" rejection from the server
+                toast.error(error.response.data?.error || 'Bank verification failed. Please check your bank details.', { autoClose: 10000 });
             } else {
                 toast.error('Failed to add bank. Please try again.');
             }
@@ -152,6 +153,18 @@ const AddBankModal = ({ isOpen, onClose, onBankAdded }) => {
                             <p className="text-blue-600 text-xs mt-1">₹1 will be debited from your wallet and sent to mentioned bank account to verify bank details. This ensures your account details are correct.</p>
                         </div>
                     </div>
+                </div>
+
+                {/* Strict current-account warning */}
+                <div className="bg-red-50 border border-red-300 rounded p-3 mb-4">
+                    <p className="text-red-700 text-sm font-semibold">Do not add a Current Account</p>
+                    <p className="text-red-600 text-xs mt-1">
+                        As per the new government rule, payouts to a current account may attract charges or the amount may be locked.
+                        Add only a personal Savings Account. An account whose holder name looks like a business
+                        (for example Traders, Services, Sales, Pvt Ltd, LLP, Shop, Construction) will be rejected.
+                        If a current account is saved under a personal name, we cannot detect it, and any charges or locked
+                        amount will be entirely your responsibility.
+                    </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
