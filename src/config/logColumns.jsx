@@ -607,6 +607,147 @@ export const getLogColumns = (tableType, openModal) => {
                 },
             ];
 
+        case 'credit-card': {
+            const actionLabels = {
+                FETCH_BILLERS: 'Fetch Billers',
+                FETCH_BILL: 'Fetch CC Bill',
+                PAY_BILL: 'Pay CC Bill',
+                RAISE_COMPLAINT: 'Raise Complaint',
+                COMPLAINT_STATUS: 'Complaint Status',
+            };
+            const outcomeStyles = {
+                SUCCESS: 'bg-green-100 text-green-800',
+                REFUSED: 'bg-red-100 text-red-800',
+                NO_RESPONSE: 'bg-orange-100 text-orange-800',
+                CONFIG_ERROR: 'bg-gray-200 text-gray-800',
+            };
+            return [
+                {
+                    accessorKey: 'createdAt',
+                    header: 'Timestamp',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900 whitespace-nowrap">
+                            {new Date(row.getValue('createdAt')).toLocaleString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                            })}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'merchantName',
+                    header: 'Merchant',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900 max-w-[180px] truncate" title={row.original.merchantName}>
+                            {row.original.merchantName || '—'}
+                            {row.original.merchantId ? (
+                                <span className="text-xs text-gray-500"> (#{row.original.merchantId})</span>
+                            ) : null}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'action',
+                    header: 'API',
+                    cell: ({ row }) => (
+                        <div className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                            {actionLabels[row.getValue('action')] || row.getValue('action')}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'billerId',
+                    header: 'Biller',
+                    cell: ({ row }) => (
+                        <div className="text-xs font-mono text-gray-900">{row.getValue('billerId') || '—'}</div>
+                    ),
+                },
+                {
+                    accessorKey: 'cardLast4',
+                    header: 'Card',
+                    cell: ({ row }) => (
+                        <div className="text-sm font-mono text-gray-900">
+                            {row.getValue('cardLast4') ? `•••• ${row.getValue('cardLast4')}` : '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'requestId',
+                    header: 'Request ID',
+                    cell: ({ row }) => (
+                        <div className="text-xs font-mono text-gray-900 truncate max-w-[170px]" title={row.getValue('requestId')}>
+                            {row.getValue('requestId') || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'amount',
+                    header: 'Amount',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900 whitespace-nowrap">
+                            {row.getValue('amount') != null ? `₹${row.getValue('amount')}` : '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'httpStatus',
+                    header: 'HTTP',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">{row.getValue('httpStatus') ?? '—'}</div>
+                    ),
+                },
+                {
+                    accessorKey: 'outcome',
+                    header: 'Result',
+                    cell: ({ row }) => (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded ${outcomeStyles[row.getValue('outcome')] || 'bg-yellow-100 text-yellow-800'}`}>
+                            {row.getValue('outcome') || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'message',
+                    header: 'Message',
+                    cell: ({ row }) => {
+                        const text = [row.original.vendorErrorCode, row.original.vendorMessage || row.original.errorMessage]
+                            .filter(Boolean)
+                            .join(' - ');
+                        return (
+                            <div className="text-sm text-gray-900 truncate max-w-[220px]" title={text}>
+                                {text || '—'}
+                            </div>
+                        );
+                    },
+                },
+                {
+                    accessorKey: 'timeTakenMs',
+                    header: 'Time (ms)',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900">
+                            {row.getValue('timeTakenMs') != null ? `${row.getValue('timeTakenMs')} ms` : '—'}
+                        </div>
+                    ),
+                },
+                {
+                    id: 'actions',
+                    header: 'Actions',
+                    cell: ({ row }) => (
+                        <button
+                            onClick={() => openModal(row.original)}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="View request and response"
+                        >
+                            <Eye size={18} />
+                        </button>
+                    ),
+                },
+            ];
+        }
+
         default:
             return [];
     }

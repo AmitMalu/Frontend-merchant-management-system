@@ -7,6 +7,7 @@ const ProductOutward = lazy(() => import('../../components/Tables/ProductOutward
 const MainReportsPageForNow = lazy(() => import('../../components/Reports/MainReportsPageForNow.jsx'));
 const Payout = lazy(() => import('../../components/Payout/Payout.jsx'));
 const CreditCardBillPayment = lazy(() => import('../../components/Payout/CreditCardBillPayment.jsx'));
+const CreditCardBillPage = lazy(() => import('../../components/CreditCard/CreditCardBillPage.jsx'));
 const BBPSPage = lazy(() => import('../../components/BBPS/BBPSPage.jsx'));
 const TransactionStatusPage = lazy(() => import('../../components/BBPS/TransactionStatusPage.jsx'));
 const ComplaintRegistrationPage = lazy(() => import('../../components/BBPS/ComplaintRegistrationPage.jsx'));
@@ -66,6 +67,10 @@ export const merchantRoutes = [
   {
     path: 'payout',
     element: <Payout />
+  },
+  {
+    path: 'credit-card',
+    element: <CreditCardBillPage />
   },
   {
     path: 'profile',

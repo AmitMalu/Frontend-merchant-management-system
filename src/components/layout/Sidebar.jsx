@@ -64,6 +64,7 @@ const MENU_KEYS = {
   REPORTS: 'reports',
   MERCHANTS: 'merchants',
   PAYOUT: 'payout',
+  CREDIT_CARD: 'credit-card',
   BILL_PAYMENT: 'payment',
   CARD_DETAILS: 'card-details',
   FUNDING: 'funding',
@@ -458,6 +459,13 @@ const MERCHANT_MENU_CONFIG = [
     key: MENU_KEYS.PAYOUT,
     path: '/dashboard/payout',
     icon: Coins,
+    iconColor: ''
+  },
+  {
+    title: 'Credit Card',
+    key: MENU_KEYS.CREDIT_CARD,
+    path: '/dashboard/credit-card',
+    icon: CreditCard,
     iconColor: ''
   },
   {
