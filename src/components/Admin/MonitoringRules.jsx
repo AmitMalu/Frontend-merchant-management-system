@@ -11,7 +11,7 @@ const SEVERITY_STYLES = {
     LOW: 'bg-blue-100 text-blue-800 border-blue-200',
 };
 
-const SOURCE_TYPES = ['PAYOUT', 'PAYOUT_REFUND', 'BBPS', 'BBPS_REFUND', 'SETTLEMENT', 'COMMISSION', 'WALLET_ADJUSTMENT', 'CARD_TRANSACTION'];
+const SOURCE_TYPES = ['PAYOUT', 'PAYOUT_REFUND', 'BBPS', 'BBPS_REFUND', 'CREDIT_CARD', 'CREDIT_CARD_REFUND', 'SETTLEMENT', 'COMMISSION', 'WALLET_ADJUSTMENT', 'CARD_TRANSACTION'];
 
 // Which parameter fields a rule form should show, per rule type — mirrors
 // exactly what RuleEvaluationService reads out of MonitoringRule.parameters.

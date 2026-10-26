@@ -8,6 +8,7 @@ export const tableOptions = [
     { value: 'franchise-or-merchant-notification', label: 'Franchise Or Merchant Notification Logs'},
     { value: 'digilocker', label: 'Digilocker Logs' },
     { value: 'mosambee', label: 'Mosambee Notification Logs' },
+    { value: 'credit-card', label: 'Credit Card Logs' },
 ];
 
 export const filterOptions = {
@@ -55,5 +56,16 @@ export const filterOptions = {
         { value: 'success', label: 'Success Status', endpoint: '/admin-logs/mosambee', status: 'SUCCESS' },
         { value: 'failed', label: 'Failed Status', endpoint: '/admin-logs/mosambee', status: 'FAILED' },
         { value: 'received', label: 'Received Status', endpoint: '/admin-logs/mosambee', status: 'RECEIVED' },
+    ],
+    'credit-card': [
+        { value: 'all', label: 'All Credit Card Calls', endpoint: '/admin-logs/credit-card', status: 'all' },
+        { value: 'fetch-billers', label: 'Fetch Billers', endpoint: '/admin-logs/credit-card/action/FETCH_BILLERS' },
+        { value: 'fetch-bill', label: 'Fetch CC Bill', endpoint: '/admin-logs/credit-card/action/FETCH_BILL' },
+        { value: 'pay-bill', label: 'Pay CC Bill', endpoint: '/admin-logs/credit-card/action/PAY_BILL' },
+        { value: 'raise-complaint', label: 'Raise Complaint', endpoint: '/admin-logs/credit-card/action/RAISE_COMPLAINT' },
+        { value: 'complaint-status', label: 'Complaint Status', endpoint: '/admin-logs/credit-card/action/COMPLAINT_STATUS' },
+        { value: 'success', label: 'Success Only', endpoint: '/admin-logs/credit-card', status: 'SUCCESS' },
+        { value: 'refused', label: 'Refused / Errors', endpoint: '/admin-logs/credit-card', status: 'REFUSED' },
+        { value: 'no-response', label: 'No Response (Timeout)', endpoint: '/admin-logs/credit-card', status: 'NO_RESPONSE' },
     ],
 };

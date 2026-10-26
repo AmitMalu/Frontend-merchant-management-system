@@ -35,6 +35,8 @@ const MTransReportFilters = ({ filters, onChange, userType, reportType, onGenera
                 { value: 'PAYOUT_REFUND', label: 'Payout Refund' },
                 { value: 'BBPS', label: 'BBPS' },
                 { value: 'BBPS_REFUND', label: 'BBPS Refund' },
+                { value: 'CREDIT_CARD', label: 'Credit Card' },
+                { value: 'CREDIT_CARD_REFUND', label: 'Credit Card Refund' },
                 { value: 'COMMISSION', label: 'Commission' },
                 { value: 'ADMIN_ADJUSTMENT', label: 'Admin Adjustment' },
                 { value: 'FRANCHISE_WALLET_TRANSFER', label: 'Credit / Debit Wallet' }

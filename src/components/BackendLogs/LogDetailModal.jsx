@@ -7,6 +7,14 @@ const LogDetailModal = ({ isOpen, onClose, log }) => {
     const formatValue = (value) => {
         if (value === null || value === undefined) return 'N/A';
         if (typeof value === 'object') return JSON.stringify(value, null, 2);
+        // JSON stored as text (request / response bodies): show it indented
+        if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+            try {
+                return JSON.stringify(JSON.parse(value), null, 2);
+            } catch {
+                // not valid JSON, show as is
+            }
+        }
         return value.toString();
     };
 

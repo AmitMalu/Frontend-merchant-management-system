@@ -320,6 +320,8 @@ const TransactionMonitoring = () => {
                             <option value="PAYOUT_REFUND">Payout Refund</option>
                             <option value="BBPS">BBPS</option>
                             <option value="BBPS_REFUND">BBPS Refund</option>
+                            <option value="CREDIT_CARD">Credit Card</option>
+                            <option value="CREDIT_CARD_REFUND">Credit Card Refund</option>
                             <option value="SETTLEMENT">Settlement</option>
                             <option value="COMMISSION">Commission</option>
                             <option value="WALLET_ADJUSTMENT">Wallet Adjustment</option>
