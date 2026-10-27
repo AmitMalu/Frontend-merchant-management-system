@@ -60,7 +60,7 @@ const SettingsSkeleton = () => (
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const MerchantSettings = () => {
-  const { register, watch, reset } = useForm({
+  const { register, watch, reset, setValue } = useForm({
     defaultValues: {
       customerType: "",
       franchiseId: "",
@@ -92,6 +92,11 @@ const MerchantSettings = () => {
   const franchiseId = watch("franchiseId");
   const merchantId = watch("merchantId");
 
+  // "franchise-account" = the franchise's OWN account (Payout / Credit Card switches only,
+  // no merchant and no lien amount). Otherwise the settings are for a merchant.
+  const isFranchiseAccount = customerType === "franchise-account";
+  const targetSelected = isFranchiseAccount ? !!franchiseId : !!merchantId;
+
   // ── Fetch franchises + direct merchants on mount ───────────────────────────
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -118,7 +123,41 @@ const MerchantSettings = () => {
     if (customerType) {
       setAvailableFranchiseMerchants([]);
     }
-  }, [customerType]);
+    // a merchant picked earlier must not leak into the franchise-account view
+    if (customerType === "franchise-account") {
+      setValue("merchantId", "");
+    }
+  }, [customerType, setValue]);
+
+  // ── Franchise account: load its own switches ───────────────────────────────
+  useEffect(() => {
+    if (!isFranchiseAccount) return;
+
+    if (!franchiseId) {
+      setIsPayout(false);
+      setIsCreditCardBillPayment(false);
+      setHasExistingSettings(false);
+      setErrors({});
+      return;
+    }
+
+    const fetchFranchiseSettings = async () => {
+      setSettingsLoading(true);
+      setHasExistingSettings(false);
+      try {
+        const response = await api.get(`/franchise/${franchiseId}/settings`);
+        setIsPayout(response.data.isPayout ?? false);
+        setIsCreditCardBillPayment(response.data.isCreditCardBillPayment ?? false);
+        setHasExistingSettings(true);
+      } catch (error) {
+        console.error("Error fetching franchise settings:", error);
+        toast.error("Could not load the settings for this franchise.");
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    fetchFranchiseSettings();
+  }, [franchiseId, isFranchiseAccount]);
 
   // ── Fetch franchise merchants ──────────────────────────────────────────────
   useEffect(() => {
@@ -140,6 +179,7 @@ const MerchantSettings = () => {
 
   // ── Fetch existing settings whenever a merchant is selected ───────────────
   useEffect(() => {
+    if (isFranchiseAccount) return; // handled by the franchise effect above
     if (!merchantId) {
       // Clear settings when merchant is deselected
       setLienAmount("");
@@ -179,7 +219,7 @@ const MerchantSettings = () => {
     };
 
     fetchMerchantSettings();
-  }, [merchantId]);
+  }, [merchantId, isFranchiseAccount]);
 
   // ── Merchant list for dropdown ─────────────────────────────────────────────
   const getMerchantsForSelection = () => {
@@ -193,15 +233,18 @@ const MerchantSettings = () => {
     const newErrors = {};
 
     if (!customerType) newErrors.customerType = "Please select a customer type";
-    if (customerType === "franchise" && !franchiseId)
+    if ((customerType === "franchise" || isFranchiseAccount) && !franchiseId)
       newErrors.franchiseId = "Please select a franchise";
-    if (!merchantId) newErrors.merchantId = "Please select a merchant";
-    if (lienAmount === "" || lienAmount === null || lienAmount === undefined)
-      newErrors.lienAmount = "Please enter a lien amount";
-    if (lienAmount !== "" && isNaN(Number(lienAmount)))
-      newErrors.lienAmount = "Lien amount must be a valid number";
-    if (lienAmount !== "" && Number(lienAmount) < 0)
-      newErrors.lienAmount = "Lien amount cannot be negative";
+
+    if (!isFranchiseAccount) {
+      if (!merchantId) newErrors.merchantId = "Please select a merchant";
+      if (lienAmount === "" || lienAmount === null || lienAmount === undefined)
+        newErrors.lienAmount = "Please enter a lien amount";
+      if (lienAmount !== "" && isNaN(Number(lienAmount)))
+        newErrors.lienAmount = "Lien amount must be a valid number";
+      if (lienAmount !== "" && Number(lienAmount) < 0)
+        newErrors.lienAmount = "Lien amount cannot be negative";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -214,6 +257,16 @@ const MerchantSettings = () => {
 
     setSubmitting(true);
     try {
+      if (isFranchiseAccount) {
+        await api.put(`/franchise/${franchiseId}/settings`, {
+          isPayout,
+          isCreditCardBillPayment,
+        });
+        setHasExistingSettings(true);
+        toast.success("Franchise settings updated successfully!");
+        return;
+      }
+
       await api.put(`/merchants/${merchantId}/settings`, {
         lienAmount: Number(lienAmount),
         isPayout,
@@ -248,6 +301,7 @@ const MerchantSettings = () => {
   const showMerchantDropdown =
     customerType &&
     (customerType === "direct" || (customerType === "franchise" && franchiseId));
+  const who = isFranchiseAccount ? "franchise" : "merchant";
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -264,7 +318,7 @@ const MerchantSettings = () => {
                 Merchant Settings
               </h1>
               <p className="text-indigo-100 text-sm mt-0.5">
-                Configure lien amount and feature toggles for a merchant
+                Configure lien amount and feature toggles for a merchant, or the Payout / Credit Card switches for a franchise
               </p>
             </div>
           </div>
@@ -294,7 +348,8 @@ const MerchantSettings = () => {
                 >
                   <option value="">Select type...</option>
                   <option value="direct">Direct Merchant</option>
-                  <option value="franchise">Franchise</option>
+                  <option value="franchise">Franchise Merchant</option>
+                  <option value="franchise-account">Franchise Account (the franchise itself)</option>
                 </select>
                 {errors.customerType && (
                   <p className="text-red-500 text-xs mt-1">{errors.customerType}</p>
@@ -302,7 +357,7 @@ const MerchantSettings = () => {
               </div>
 
               {/* Franchise (conditional) */}
-              {customerType === "franchise" && (
+              {(customerType === "franchise" || isFranchiseAccount) && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Franchise <span className="text-red-500">*</span>
@@ -364,7 +419,7 @@ const MerchantSettings = () => {
           </div>
 
           {/* ── Settings Section ── */}
-          {merchantId && (
+          {targetSelected && (
             <>
               <hr className="border-gray-200" />
 
@@ -383,7 +438,7 @@ const MerchantSettings = () => {
                 <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
                   <SlidersHorizontal className="h-4 w-4 text-amber-600 shrink-0" />
                   <span>
-                    No settings saved yet for this merchant. Configure and save below.
+                    No settings saved yet for this {who}. Configure and save below.
                   </span>
                 </div>
               )}
@@ -393,7 +448,8 @@ const MerchantSettings = () => {
                 <SettingsSkeleton />
               ) : (
                 <>
-                  {/* Lien Amount */}
+                  {/* Lien Amount (merchants only) */}
+                  {!isFranchiseAccount && (<>
                   <div>
                     <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                       <span className="w-5 h-0.5 bg-indigo-500 rounded" />
@@ -436,6 +492,7 @@ const MerchantSettings = () => {
                   </div>
 
                   <hr className="border-gray-200" />
+                  </>)}
 
                   {/* Feature Toggles */}
                   <div>
@@ -447,13 +504,13 @@ const MerchantSettings = () => {
                     <div className="space-y-3">
                       <BooleanToggle
                         label="Payout"
-                        description="Allow this merchant to initiate payout transactions"
+                        description={`Allow this ${who} to initiate payout transactions`}
                         value={isPayout}
                         onChange={setIsPayout}
                       />
                       <BooleanToggle
                         label="Credit Card Bill Payment"
-                        description="Allow this merchant to accept credit card bill payments"
+                        description={`Allow this ${who} to pay credit card bills`}
                         value={isCreditCardBillPayment}
                         onChange={setIsCreditCardBillPayment}
                       />
@@ -464,13 +521,15 @@ const MerchantSettings = () => {
                   <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-indigo-800 mb-2">Summary</h3>
                     <ul className="text-sm text-indigo-700 space-y-1">
-                      <li className="flex items-center gap-2">
-                        <IndianRupee className="h-3.5 w-3.5" />
-                        Lien Amount:{" "}
-                        <span className="font-medium">
-                          ₹{lienAmount !== "" ? Number(lienAmount).toLocaleString("en-IN") : "—"}
-                        </span>
-                      </li>
+                      {!isFranchiseAccount && (
+                        <li className="flex items-center gap-2">
+                          <IndianRupee className="h-3.5 w-3.5" />
+                          Lien Amount:{" "}
+                          <span className="font-medium">
+                            ₹{lienAmount !== "" ? Number(lienAmount).toLocaleString("en-IN") : "—"}
+                          </span>
+                        </li>
+                      )}
                       <li className="flex items-center gap-2">
                         {isPayout ? (
                           <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
@@ -514,7 +573,7 @@ const MerchantSettings = () => {
 
             <button
               type="submit"
-              disabled={submitting || !merchantId || settingsLoading}
+              disabled={submitting || !targetSelected || settingsLoading}
               className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (

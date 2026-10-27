@@ -640,12 +640,14 @@ export const getLogColumns = (tableType, openModal) => {
                 },
                 {
                     accessorKey: 'merchantName',
-                    header: 'Merchant',
+                    header: 'Merchant / Franchise',
                     cell: ({ row }) => (
-                        <div className="text-sm text-gray-900 max-w-[180px] truncate" title={row.original.merchantName}>
+                        <div className="text-sm text-gray-900 max-w-[200px] truncate" title={row.original.merchantName}>
                             {row.original.merchantName || '—'}
                             {row.original.merchantId ? (
-                                <span className="text-xs text-gray-500"> (#{row.original.merchantId})</span>
+                                <span className="text-xs text-gray-500">
+                                    {' '}({row.original.customerType === 'FRANCHISE' ? 'Franchise' : 'Merchant'} #{row.original.merchantId})
+                                </span>
                             ) : null}
                         </div>
                     ),

@@ -166,6 +166,7 @@ const Header = ({ userType }) => {
       '/dashboard/reports': 'Reports',
       '/dashboard/payout': 'Payout',
       '/dashboard/credit-card': 'Credit Card Bill Payment',
+      '/dashboard/reports/credit-card-bill': 'Credit Card Bill Report',
       '/dashboard/bill-payment': 'Bill Pay',
       '/dashboard/bill-payment/transaction': 'Transaction Status',
       '/dashboard/bill-payment/complaint': 'Raise Complaint',

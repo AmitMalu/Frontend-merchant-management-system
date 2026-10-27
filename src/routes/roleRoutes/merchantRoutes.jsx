@@ -14,6 +14,7 @@ const ComplaintRegistrationPage = lazy(() => import('../../components/BBPS/Compl
 const ComplaintTrackingPage = lazy(() => import('../../components/BBPS/ComplaintTrackingPage.jsx'));
 const MTransReportDashboard = lazy(() => import('../../components/Reports/MerchantTransReport/MTransReportDashboard.jsx'));
 const PayoutTransactionsReport = lazy(() => import('../../components/Reports/PayoutTransactionsReports.jsx'));
+const CreditCardBillReport = lazy(() => import('../../components/Reports/CreditCardBillReport.jsx'));
 const SettledUnsettledTransactionReport = lazy(() => import('../../components/Reports/SettledUnsettledTransactionsReports.jsx'))
 const ViewProfile = lazy(() => import('../../components/layout/ViewProfile.jsx'));
 const SupportTickets = lazy(() => import('../../components/Tables/SupportTicket.jsx'));
@@ -90,6 +91,10 @@ export const merchantRoutes = [
       {
         path: "payout-transaction",
         element: <PayoutTransactionsReport />
+      },
+      {
+        path: "credit-card-bill",
+        element: <CreditCardBillReport />
       },
       {
         path: "settled-unsettled",
