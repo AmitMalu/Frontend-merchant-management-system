@@ -358,7 +358,8 @@ const ADMIN_MENU_CONFIG = (userType) => [
       { title: 'Product Reports', path: '/dashboard/reports/product', icon: BarChart3 },
       { title: 'Stock Reports', path: '/dashboard/reports/stock', icon: BarChart3 },
       { title: 'Settled Unsettled Reports', path: '/dashboard/reports/settled-unsettled', icon: BarChart3 },
-      { title: 'Payout Transaction Reports', path: '/dashboard/reports/payout-transaction', icon: BarChart3 }
+      { title: 'Payout Transaction Reports', path: '/dashboard/reports/payout-transaction', icon: BarChart3 },
+      { title: 'Credit Card Bill Reports', path: '/dashboard/reports/credit-card-bill', icon: BarChart3 }
     ]
   }
 ];
@@ -400,6 +401,13 @@ const FRANCHISE_MENU_CONFIG = [
     iconColor: ''
   },
   {
+    title: 'Credit Card',
+    key: MENU_KEYS.CREDIT_CARD,
+    path: '/dashboard/credit-card',
+    icon: CreditCard,
+    iconColor: ''
+  },
+  {
     title: 'Reports',
     path: '/dashboard/reports',
     key: MENU_KEYS.REPORTS,
@@ -407,7 +415,9 @@ const FRANCHISE_MENU_CONFIG = [
     iconColor: '',
     children: [
       { title: 'Merchant Transaction Reports', path: '/dashboard/reports/merchant-transactions', icon: BarChart3 },
-      { title: 'Franchise Transaction Report', path: '/dashboard/reports/franchise-transactions', icon: BarChart3 }
+      { title: 'Franchise Transaction Report', path: '/dashboard/reports/franchise-transactions', icon: BarChart3 },
+      { title: 'Payout Transaction Reports', path: '/dashboard/reports/payout-transaction', icon: BarChart3 },
+      { title: 'Credit Card Bill Reports', path: '/dashboard/reports/credit-card-bill', icon: BarChart3 }
     ]
   },
   {
@@ -483,6 +493,7 @@ const MERCHANT_MENU_CONFIG = [
     children: [
       { title: 'Merchant Transaction Reports', path: '/dashboard/reports/merchant-transactions', icon: BarChart3 },
       { title: 'Payout Transaction Reports', path: '/dashboard/reports/payout-transaction', icon: BarChart3 },
+      { title: 'Credit Card Bill Reports', path: '/dashboard/reports/credit-card-bill', icon: BarChart3 },
       { title: 'Settled Unsettled Reports', path: '/dashboard/reports/settled-unsettled', icon: BarChart3 }
 
     ]

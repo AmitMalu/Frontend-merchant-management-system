@@ -47,6 +47,7 @@ const TaxesManagement = lazy(() => import('../../components/Admin/TaxesManagemen
 const AdminSupportTickets = lazy(() => import('../../components/Admin/AdminSupportTickets.jsx'));
 const SettledUnsettledTransactions = lazy(() => import('../../components/Reports/SettledUnsettledTransactionsReports.jsx'));
 const PayoutTransaction = lazy(() => import('../../components/Reports/PayoutTransactionsReports.jsx'));
+const CreditCardBillReport = lazy(() => import('../../components/Reports/CreditCardBillReport.jsx'));
 const PrefundAuthorization = lazy(() => import('../../components/Admin/PrefundAuthorization.jsx'));
 const MerchantSettings = lazy(() => import('../../components/Forms/MerchantSettings.jsx'));
 const UpdateTransaction = lazy(() => import('../../components/Admin/UpdateTransaction.jsx'));
@@ -279,6 +280,10 @@ export const adminRoutes = [
       { 
         path: "payout-transaction",
         element: <PayoutTransaction />
+      },
+      {
+        path: "credit-card-bill",
+        element: <CreditCardBillReport />
       }
     ]
   }

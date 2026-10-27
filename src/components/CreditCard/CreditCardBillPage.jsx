@@ -20,6 +20,13 @@ const Row = ({ label, value }) => (
     </div>
 );
 
+const Spinner = ({ className = 'h-5 w-5' }) => (
+    <svg className={`animate-spin ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+);
+
 const CreditCardBillPage = () => {
     const [billers, setBillers] = useState([]);
     const [loadingBillers, setLoadingBillers] = useState(true);
@@ -168,7 +175,11 @@ const CreditCardBillPage = () => {
                             className="text-sm"
                             isDisabled={fetching || paying}
                         />
-                        {billersError && <p className="text-red-500 text-xs mt-1">{billersError}</p>}
+                        {billersError && (
+                            <div className="mt-2 bg-amber-50 border border-amber-300 rounded p-3 text-sm text-amber-900">
+                                {billersError}
+                            </div>
+                        )}
                     </div>
 
                     {selectedBiller && (
@@ -208,8 +219,9 @@ const CreditCardBillPage = () => {
                             <button
                                 type="submit"
                                 disabled={!canFetch}
-                                className="w-full bg-blue-500 text-white py-2 rounded font-medium hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
+                                className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white py-2 rounded font-medium hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
                             >
+                                {fetching && <Spinner className="h-4 w-4" />}
                                 {fetching ? 'Fetching bill...' : 'Fetch Bill'}
                             </button>
                         </>
@@ -218,6 +230,14 @@ const CreditCardBillPage = () => {
 
                 {/* Step 2: bill + pay, or the result */}
                 <div className="space-y-4">
+                    {fetching && (
+                        <div className="bg-white border border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center text-blue-500">
+                            <Spinner className="h-10 w-10" />
+                            <p className="mt-3 text-sm font-medium text-gray-700">Fetching your bill from the bank...</p>
+                            <p className="text-xs text-gray-500 mt-1">This can take a few seconds. Please do not close or refresh the page.</p>
+                        </div>
+                    )}
+
                     {result && (
                         <div className={`border rounded-lg p-4 ${resultStyle[result.status] || resultStyle.PENDING}`}>
                             <p className="font-semibold">{resultTitle[result.status] || 'Payment status'}</p>
@@ -290,8 +310,9 @@ const CreditCardBillPage = () => {
                                         <button
                                             onClick={handlePay}
                                             disabled={paying}
-                                            className="flex-1 bg-green-500 text-white py-2 rounded font-medium hover:bg-green-600 disabled:bg-green-300"
+                                            className="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white py-2 rounded font-medium hover:bg-green-600 disabled:bg-green-300"
                                         >
+                                            {paying && <Spinner className="h-4 w-4" />}
                                             {paying ? 'Processing...' : 'Yes, pay now'}
                                         </button>
                                         <button

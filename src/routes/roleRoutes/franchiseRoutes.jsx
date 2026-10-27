@@ -9,6 +9,9 @@ const FranchiseProductAssign_Scheme = lazy(() => import('../../components/Tables
 const MTransReportDashboard = lazy(() => import('../../components/Reports/MerchantTransReport/MTransReportDashboard.jsx'));
 const FTransReportDashboard = lazy(() => import('../../components/Reports/FranhiseTransReports/FTransReportDashboard.jsx'));
 const Payout = lazy(() => import('../../components/Payout/Payout.jsx'));
+const CreditCardBillPage = lazy(() => import('../../components/CreditCard/CreditCardBillPage.jsx'));
+const CreditCardBillReport = lazy(() => import('../../components/Reports/CreditCardBillReport.jsx'));
+const FranchisePayoutReport = lazy(() => import('../../components/Reports/FranchisePayoutReport.jsx'));
 const ViewProfile = lazy(() => import('../../components/layout/ViewProfile.jsx'));
 const SupportTickets = lazy(() => import('../../components/Tables/SupportTicket.jsx'));
 const PrefundWalletForm = lazy(() => import('../../components/Tables/PrefundWalletForm.jsx'));
@@ -55,6 +58,10 @@ export const franchiseRoutes = [
     element: <Payout />
   },
   {
+    path: 'credit-card',
+    element: <CreditCardBillPage />
+  },
+  {
     path: 'profile',
     element: <ViewProfile />
   },
@@ -72,6 +79,14 @@ export const franchiseRoutes = [
       {
         path: "franchise-transactions",
         element: <FTransReportDashboard />
+      },
+      {
+        path: "payout-transaction",
+        element: <FranchisePayoutReport />
+      },
+      {
+        path: "credit-card-bill",
+        element: <CreditCardBillReport />
       }
     ]
   },
