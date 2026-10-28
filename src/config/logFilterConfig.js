@@ -8,7 +8,8 @@ export const tableOptions = [
     { value: 'franchise-or-merchant-notification', label: 'Franchise Or Merchant Notification Logs'},
     { value: 'digilocker', label: 'Digilocker Logs' },
     { value: 'mosambee', label: 'Mosambee Notification Logs' },
-    { value: 'credit-card', label: 'Credit Card Logs' },
+    { value: 'paytm', label: 'Paytm Notification Logs' },
+    { value: 'credit-card', label: 'CCBP Logs (Credit Card Bill Payment)' },
 ];
 
 export const filterOptions = {
@@ -56,6 +57,12 @@ export const filterOptions = {
         { value: 'success', label: 'Success Status', endpoint: '/admin-logs/mosambee', status: 'SUCCESS' },
         { value: 'failed', label: 'Failed Status', endpoint: '/admin-logs/mosambee', status: 'FAILED' },
         { value: 'received', label: 'Received Status', endpoint: '/admin-logs/mosambee', status: 'RECEIVED' },
+    ],
+    paytm: [
+        { value: 'all', label: 'All Notifications', endpoint: '/admin-logs/paytm', status: 'all' },
+        { value: 'received', label: 'Received Status', endpoint: '/admin-logs/paytm', status: 'RECEIVED' },
+        { value: 'success', label: 'Success Status', endpoint: '/admin-logs/paytm', status: 'SUCCESS' },
+        { value: 'failed', label: 'Failed Status', endpoint: '/admin-logs/paytm', status: 'FAILED' },
     ],
     'credit-card': [
         { value: 'all', label: 'All Credit Card Calls', endpoint: '/admin-logs/credit-card', status: 'all' },

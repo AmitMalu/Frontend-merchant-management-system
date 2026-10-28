@@ -108,7 +108,7 @@ const ResultModal = ({ result, onClose }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 const UpdateTransaction = () => {
   // ── Merchant selection state ───────────────────────────────────────────────
-  const [merchantType, setMerchantType] = useState("direct"); // direct | franchise
+  const [merchantType, setMerchantType] = useState("direct"); // direct | franchise | franchiseOwn
   const [franchises, setFranchises] = useState([]);
   const [directMerchants, setDirectMerchants] = useState([]);
   const [franchiseMerchants, setFranchiseMerchants] = useState([]);
@@ -190,6 +190,9 @@ const UpdateTransaction = () => {
   const merchantList =
     merchantType === "franchise" ? franchiseMerchants : directMerchants;
 
+  // true: the rows are a franchise's OWN payouts, not a merchant's
+  const isFranchiseOwn = merchantType === "franchiseOwn";
+
   // ── Fetch PENDING transactions ─────────────────────────────────────────────
   const fetchTransactions = async (pg = 0) => {
     if (!startDate || !endDate) {
@@ -209,12 +212,20 @@ const UpdateTransaction = () => {
         size,
       };
 
-      // merchantId is optional — only add if selected
-      if (selectedMerchantId) {
+      let endpoint = "/update-transaction/merchant-report";
+
+      if (isFranchiseOwn) {
+        // the franchise's own payouts (franchise ledger); franchiseId is optional (all franchises)
+        endpoint = "/update-transaction/franchise-report";
+        if (selectedFranchiseId) {
+          params.franchiseId = selectedFranchiseId;
+        }
+      } else if (selectedMerchantId) {
+        // merchantId is optional — only add if selected
         params.merchantId = selectedMerchantId;
       }
 
-      const res = await api.get("/update-transaction/merchant-report", { params });
+      const res = await api.get(endpoint, { params });
 
       if (res.data.success) {
         setTransactions(res.data.data.transactions || []);
@@ -282,6 +293,8 @@ const UpdateTransaction = () => {
         transactionIds: Array.from(selectedIds),
         status: updateStatus,
         remarks: remarks.trim(),
+        // merchant and franchise ledger ids overlap, so the server needs to know which one
+        accountType: isFranchiseOwn ? "FRANCHISE" : "MERCHANT",
       });
 
       setResult(res.data);
@@ -351,14 +364,24 @@ const UpdateTransaction = () => {
                 />
                 Franchise Merchant
               </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  value="franchiseOwn"
+                  checked={merchantType === "franchiseOwn"}
+                  onChange={(e) => setMerchantType(e.target.value)}
+                  className="mr-2"
+                />
+                Franchise (own payouts)
+              </label>
             </div>
           </div>
 
-          {/* Franchise dropdown (franchise only) */}
-          {merchantType === "franchise" && (
+          {/* Franchise dropdown (franchise merchants, or a franchise's own payouts) */}
+          {(merchantType === "franchise" || isFranchiseOwn) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Franchise
+                Select Franchise{isFranchiseOwn ? " (optional)" : ""}
               </label>
               <select
                 value={selectedFranchiseId}
@@ -371,7 +394,7 @@ const UpdateTransaction = () => {
                 disabled={loadingFranchises}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
               >
-                <option value="">Choose Franchise</option>
+                <option value="">{isFranchiseOwn ? "All Franchises" : "Choose Franchise"}</option>
                 {franchises.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.franchiseName} - {f.contactPersonName}
@@ -551,7 +574,7 @@ const UpdateTransaction = () => {
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Txn ID</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Merchant</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">{isFranchiseOwn ? "Franchise" : "Merchant"}</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Service</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Remarks</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Amount</th>

@@ -607,6 +607,101 @@ export const getLogColumns = (tableType, openModal) => {
                 },
             ];
 
+        case 'paytm':
+            return [
+                {
+                    accessorKey: 'createdAt',
+                    header: 'Timestamp',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900 whitespace-nowrap">
+                            {new Date(row.getValue('createdAt')).toLocaleString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                            })}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'orderId',
+                    header: 'Order ID',
+                    cell: ({ row }) => (
+                        <div className="text-sm font-mono text-gray-900 truncate max-w-[170px]" title={row.getValue('orderId')}>
+                            {row.getValue('orderId') || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'txnId',
+                    header: 'Transaction ID',
+                    cell: ({ row }) => (
+                        <div className="text-sm font-mono text-gray-900 truncate max-w-[170px]" title={row.getValue('txnId')}>
+                            {row.getValue('txnId') || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    id: 'source',
+                    header: 'Received From',
+                    cell: ({ row }) => (
+                        <div className="text-xs font-mono text-gray-900 whitespace-nowrap">
+                            {row.original.forwardedFor || row.original.remoteAddr || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'contentType',
+                    header: 'Content Type',
+                    cell: ({ row }) => (
+                        <div className="text-xs text-gray-900 truncate max-w-[160px]" title={row.getValue('contentType')}>
+                            {row.getValue('contentType') || '—'}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'bodyLength',
+                    header: 'Size',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900 whitespace-nowrap">
+                            {row.getValue('bodyLength') != null ? `${row.getValue('bodyLength')} B` : '—'}
+                            {row.original.bodyTruncated ? (
+                                <span className="text-xs text-orange-600"> (cut)</span>
+                            ) : null}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'processStatus',
+                    header: 'Status',
+                    cell: ({ row }) => (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded ${
+                            row.getValue('processStatus') === 'SUCCESS' ? 'bg-green-100 text-green-800' :
+                            row.getValue('processStatus') === 'FAILED' ? 'bg-red-100 text-red-800' :
+                            row.getValue('processStatus') === 'RECEIVED' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }`}>
+                            {row.getValue('processStatus') || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'actions',
+                    header: 'Actions',
+                    cell: ({ row }) => (
+                        <button
+                            onClick={() => openModal(row.original)}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="View Details"
+                        >
+                            <Eye size={18} />
+                        </button>
+                    ),
+                },
+            ];
+
         case 'credit-card': {
             const actionLabels = {
                 FETCH_BILLERS: 'Fetch Billers',
