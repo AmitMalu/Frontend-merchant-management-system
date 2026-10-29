@@ -51,6 +51,7 @@ const CreditCardBillReport = lazy(() => import('../../components/Reports/CreditC
 const PrefundAuthorization = lazy(() => import('../../components/Admin/PrefundAuthorization.jsx'));
 const MerchantSettings = lazy(() => import('../../components/Forms/MerchantSettings.jsx'));
 const UpdateTransaction = lazy(() => import('../../components/Admin/UpdateTransaction.jsx'));
+const NotificationCallbacks = lazy(() => import('../../components/Admin/NotificationCallbacks.jsx'));
 
 export const adminRoutes = [
   {
@@ -222,6 +223,10 @@ export const adminRoutes = [
       {
         path: "update-transaction",
         element: <UpdateTransaction />
+      },
+      {
+        path: "notification-urls",
+        element: <NotificationCallbacks />
       },
     ]
   },

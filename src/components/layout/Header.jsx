@@ -163,6 +163,7 @@ const Header = ({ userType }) => {
       '/dashboard/customers/assign-products': 'Product Assignment',
       '/dashboard/others/upload': 'File Upload',
       '/dashboard/others/charges': 'Charge Calculation',
+      '/dashboard/others/notification-urls': 'Notification URL',
       '/dashboard/reports': 'Reports',
       '/dashboard/payout': 'Payout',
       '/dashboard/credit-card': 'Credit Card Bill Payment',
