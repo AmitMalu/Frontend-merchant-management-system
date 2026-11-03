@@ -52,7 +52,7 @@ const SUMMARY_CONFIG = [
   { key: "successCount", label: "Successful" },
   { key: "pendingCount", label: "Pending" },
   { key: "failedCount", label: "Failed" },
-  { key: "successBillAmount", label: "Bill Amount (Successful)", formatter: formatMoney },
+  { key: "successBillAmount", label: "Amount Paid (Successful)", formatter: formatMoney },
   { key: "successCharges", label: "Service Charges (Successful)", formatter: formatMoney },
   { key: "successTotalDeducted", label: "Total Deducted (Successful)", formatter: formatMoney }
 ];
@@ -223,7 +223,8 @@ const CreditCardBillReport = () => {
     },
     { accessorKey: "cardHolder", header: "Card Holder", cell: ({ getValue }) => getValue() ?? "-" },
     { accessorKey: "mobile", header: "Mobile", cell: ({ getValue }) => getValue() ?? "-" },
-    { accessorKey: "billAmount", header: "Bill Amount", cell: ({ getValue }) => formatMoney(getValue()) },
+    { accessorKey: "billAmount", header: "Amount Paid", cell: ({ getValue }) => formatMoney(getValue()) },
+    { accessorKey: "dueAmount", header: "Bill Due", cell: ({ getValue }) => (getValue() != null ? formatMoney(getValue()) : "-") },
     { accessorKey: "charges", header: "Service Charge", cell: ({ getValue }) => formatMoney(getValue()) },
     { accessorKey: "totalDeducted", header: "Total Deducted", cell: ({ getValue }) => formatMoney(getValue()) },
     {
@@ -335,7 +336,8 @@ const CreditCardBillReport = () => {
       CardLast4: d.cardLast4,
       CardHolder: d.cardHolder,
       Mobile: d.mobile,
-      BillAmount: d.billAmount,
+      AmountPaid: d.billAmount,
+      BillDue: d.dueAmount,
       ServiceCharge: d.charges,
       TotalDeducted: d.totalDeducted,
       Status: d.status,
@@ -359,7 +361,7 @@ const CreditCardBillReport = () => {
 
   const pdfColumns = {
     headers: ["Date", "Transaction ID", ...((isAdmin || isFranchise) ? ["Account"] : []),
-      "Biller", "Card", "Bill Amount", "Charge", "Total", "Status"],
+      "Biller", "Card", "Amount Paid", "Charge", "Total", "Status"],
     keys: ["date", "txnId", ...((isAdmin || isFranchise) ? ["account"] : []),
       "biller", "card", "billAmount", "charge", "total", "status"]
   };
@@ -386,7 +388,7 @@ const CreditCardBillReport = () => {
         <SummaryCard title="Failed" value={summary?.failedCount ?? 0} color="red" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-        <SummaryCard title="Bill Amount (Successful)" value={formatMoney(summary?.successBillAmount)} />
+        <SummaryCard title="Amount Paid (Successful)" value={formatMoney(summary?.successBillAmount)} />
         <SummaryCard title="Service Charges (Successful)" value={formatMoney(summary?.successCharges)} />
         <SummaryCard title="Total Deducted (Successful)" value={formatMoney(summary?.successTotalDeducted)} />
       </div>
