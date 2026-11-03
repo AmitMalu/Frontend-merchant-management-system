@@ -108,7 +108,12 @@ const CreditCardHistory = ({ refreshKey }) => {
                                 <td className="px-4 py-3">{r.billerName || '—'}</td>
                                 <td className="px-4 py-3 font-mono">•••• {r.cardLast4}</td>
                                 <td className="px-4 py-3">{r.customerName || '—'}</td>
-                                <td className="px-4 py-3 whitespace-nowrap">{formatMoney(r.billAmount)}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                    {formatMoney(r.billAmount)}
+                                    {r.billDueAmount != null && Number(r.billDueAmount) > Number(r.billAmount) && (
+                                        <div className="text-xs text-gray-500">of {formatMoney(r.billDueAmount)} due</div>
+                                    )}
+                                </td>
                                 <td className="px-4 py-3 whitespace-nowrap">{formatMoney(r.totalDeducted)}</td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 rounded text-xs ${STATUS_STYLE[r.status] || 'bg-gray-100 text-gray-800'}`}>

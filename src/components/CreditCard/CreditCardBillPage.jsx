@@ -42,6 +42,14 @@ const CreditCardBillPage = () => {
     const [confirming, setConfirming] = useState(false);
     const [paying, setPaying] = useState(false);
 
+    // How much of the bill to pay: the whole due amount, or an amount the customer types
+    const [payMode, setPayMode] = useState('FULL'); // FULL | CUSTOM
+    const [customAmount, setCustomAmount] = useState('');
+    const [quote, setQuote] = useState(null); // charge and total for the typed amount
+    const [quoting, setQuoting] = useState(false);
+    const [quoteError, setQuoteError] = useState('');
+    const [partNote, setPartNote] = useState('');
+
     const [result, setResult] = useState(null); // { status, message, data }
     const [historyKey, setHistoryKey] = useState(0);
     const payingRef = useRef(false);
@@ -66,11 +74,16 @@ const CreditCardBillPage = () => {
         setBill(null);
         setPan('');
         setConfirming(false);
+        setPayMode('FULL');
+        setCustomAmount('');
+        setQuote(null);
+        setQuoteError('');
     };
 
     const handleBillerChange = (option) => {
         setSelectedBiller(option);
         setResult(null);
+        setPartNote('');
         resetBill();
     };
 
@@ -83,6 +96,7 @@ const CreditCardBillPage = () => {
         try {
             setFetching(true);
             setResult(null);
+            setPartNote('');
             resetBill();
             const res = await api.post('/credit-card/fetch-bill', {
                 billerId: selectedBiller.value,
@@ -97,14 +111,64 @@ const CreditCardBillPage = () => {
         }
     };
 
+    // ---- how much to pay ----
+    const dueAmount = Number(bill?.billAmount ?? 0);
+    const minPartial = Number(bill?.minPartialAmount ?? 0);
+    const customNum = Number(customAmount);
+    const customError =
+        payMode !== 'CUSTOM' || customAmount === '' ? '' :
+        !(customNum > 0) ? 'Enter an amount greater than zero.' :
+        customNum > dueAmount ? `The amount cannot be more than ${formatMoney(dueAmount)}.` :
+        customNum < dueAmount && customNum < minPartial ? `The minimum amount you can pay is ${formatMoney(minPartial)}.` : '';
+    const customValid = payMode === 'CUSTOM' && customAmount !== '' && !customError;
+    const isPart = customValid && customNum < dueAmount; // less than the whole bill
+
+    const selectMode = (mode) => {
+        setPayMode(mode);
+        if (mode === 'FULL') setCustomAmount('');
+    };
+
+    // The charge depends on the amount, so ask the server what the typed amount would cost.
+    useEffect(() => {
+        setQuote(null);
+        setQuoteError('');
+        if (!bill || payMode !== 'CUSTOM' || !customValid) {
+            setQuoting(false);
+            return undefined;
+        }
+        let cancelled = false;
+        setQuoting(true);
+        const timer = setTimeout(async () => {
+            try {
+                const res = await api.post('/credit-card/quote', { requestId: bill.requestId, amount: customNum });
+                if (!cancelled) setQuote(res.data?.data);
+            } catch (error) {
+                if (!cancelled) setQuoteError(errorMessage(error, 'Could not calculate the charges. Please try again.'));
+            } finally {
+                if (!cancelled) setQuoting(false);
+            }
+        }, 500);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [bill, payMode, customValid, customNum]);
+
+    const quoted = payMode === 'CUSTOM' ? quote : null;
+    const shownAmount = quoted ? quoted.amount : bill?.billAmount;
+    const shownCharges = quoted ? quoted.charges : bill?.charges;
+    const shownTotal = quoted ? quoted.totalPayable : bill?.totalPayable;
+    const panRequired = payMode === 'CUSTOM' ? Boolean(quote?.panRequired) : Boolean(bill?.panRequired);
+    const payReady = payMode === 'FULL' || (customValid && !!quote && !quoting && Number(quote.amount) === customNum);
+
     const panValid = !pan || PAN_REGEX.test(pan);
-    const panOk = bill?.panRequired ? PAN_REGEX.test(pan) : panValid;
+    const panOk = panRequired ? PAN_REGEX.test(pan) : panValid;
 
     const handlePay = async () => {
         // The ref blocks a second click in the same instant (state updates are async);
         // the server also refuses to pay the same bill, or the same amount to the
         // same card within 2 minutes, twice.
-        if (!bill || paying || !panOk || payingRef.current) return;
+        if (!bill || paying || !panOk || !payReady || payingRef.current) return;
         payingRef.current = true;
 
         let finished = false; // true once the server gave a payment result
@@ -112,8 +176,13 @@ const CreditCardBillPage = () => {
             setPaying(true);
             const res = await api.post('/credit-card/pay', {
                 requestId: bill.requestId,
-                customerPan: pan || null
+                customerPan: pan || null,
+                // only when a part of the bill is paid; empty means the whole bill
+                amount: isPart ? customNum : null
             });
+            setPartNote(isPart
+                ? `Only ${formatMoney(customNum)} of the ${formatMoney(dueAmount)} bill was paid. The remaining ${formatMoney(dueAmount - customNum)} is still due: fetch the bill again to pay it.`
+                : '');
             setResult(res.data); // SUCCESS or PENDING
             finished = true;
         } catch (error) {
@@ -248,6 +317,12 @@ const CreditCardBillPage = () => {
                             {result.data?.totalDeducted != null && result.status !== 'FAILED' && (
                                 <p className="text-xs mt-1">Deducted from wallet: {formatMoney(result.data.totalDeducted)}</p>
                             )}
+                            {result.data?.billAmount != null && result.status !== 'FAILED' && (
+                                <p className="text-xs mt-1">Bill amount paid: {formatMoney(result.data.billAmount)}</p>
+                            )}
+                            {partNote && result.status !== 'FAILED' && (
+                                <p className="text-xs mt-2 font-medium">{partNote}</p>
+                            )}
                             {result.status === 'FAILED' && (
                                 <p className="text-xs mt-1">No amount has been deducted from your wallet.</p>
                             )}
@@ -263,16 +338,79 @@ const CreditCardBillPage = () => {
                             <Row label="Bill number" value={bill.billNumber} />
                             <Row label="Bill date" value={bill.billDate} />
                             <Row label="Due date" value={bill.dueDate} />
-                            <Row label="Bill amount" value={formatMoney(bill.billAmount)} />
-                            <Row label="Service charges" value={formatMoney(bill.charges)} />
+                            <Row label={bill.partialAllowed ? 'Bill amount (due)' : 'Bill amount'} value={formatMoney(bill.billAmount)} />
+
+                            {bill.partialAllowed && (
+                                <div className="mt-3 mb-1 border border-gray-200 rounded-lg p-3 space-y-2">
+                                    <p className="text-sm font-medium text-gray-700">How much do you want to pay?</p>
+
+                                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="payMode"
+                                            checked={payMode === 'FULL'}
+                                            onChange={() => selectMode('FULL')}
+                                            disabled={paying}
+                                        />
+                                        <span>Pay the full due amount: <strong>{formatMoney(bill.billAmount)}</strong></span>
+                                    </label>
+
+                                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="payMode"
+                                            className="mt-1"
+                                            checked={payMode === 'CUSTOM'}
+                                            onChange={() => selectMode('CUSTOM')}
+                                            disabled={paying}
+                                        />
+                                        <span className="flex-1">
+                                            Pay a different amount
+                                            {payMode === 'CUSTOM' && (
+                                                <span className="block mt-2">
+                                                    <input
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={customAmount}
+                                                        onChange={(e) => {
+                                                            const v = e.target.value;
+                                                            if (/^\d*\.?\d{0,2}$/.test(v)) setCustomAmount(v);
+                                                        }}
+                                                        placeholder={`${formatMoney(minPartial)} to ${formatMoney(dueAmount)}`}
+                                                        disabled={paying}
+                                                        autoFocus
+                                                        className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent ${customError ? 'border-red-500' : 'border-gray-300'}`}
+                                                    />
+                                                    {customError ? (
+                                                        <span className="block text-xs text-red-500 mt-1">{customError}</span>
+                                                    ) : (
+                                                        <span className="block text-xs text-gray-500 mt-1">
+                                                            Minimum {formatMoney(minPartial)}, maximum {formatMoney(dueAmount)}. The rest stays due: fetch the bill again later to pay it.
+                                                        </span>
+                                                    )}
+                                                    {quoteError && <span className="block text-xs text-red-500 mt-1">{quoteError}</span>}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </label>
+                                </div>
+                            )}
+
+                            {bill.partialAllowed && (
+                                <Row label="Amount you will pay" value={shownAmount != null ? formatMoney(shownAmount) : '—'} />
+                            )}
+                            <Row label="Service charges" value={shownCharges != null ? formatMoney(shownCharges) : '—'} />
                             <div className="flex justify-between py-2 text-base">
                                 <span className="font-semibold text-gray-800">Total from your wallet</span>
-                                <span className="font-bold text-gray-900">{formatMoney(bill.totalPayable)}</span>
+                                <span className="font-bold text-gray-900 flex items-center gap-2">
+                                    {quoting && <Spinner className="h-4 w-4 text-blue-500" />}
+                                    {shownTotal != null ? formatMoney(shownTotal) : '—'}
+                                </span>
                             </div>
 
                             <div className="mt-3">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Customer PAN {bill.panRequired ? '*' : '(optional)'}
+                                    Customer PAN {panRequired ? '*' : '(optional)'}
                                 </label>
                                 <input
                                     type="text"
@@ -283,7 +421,7 @@ const CreditCardBillPage = () => {
                                     disabled={paying}
                                     className={`w-full p-2 border rounded font-mono tracking-wider focus:ring-2 focus:ring-blue-500 focus:border-transparent ${pan && !panValid ? 'border-red-500' : 'border-gray-300'}`}
                                 />
-                                {bill.panRequired && (
+                                {panRequired && (
                                     <p className="text-xs text-gray-500 mt-1">PAN is mandatory for payments of ₹50,000 or more.</p>
                                 )}
                                 {pan && !panValid && <p className="text-xs text-red-500 mt-1">Enter a valid PAN (5 letters, 4 digits, 1 letter).</p>}
@@ -296,15 +434,19 @@ const CreditCardBillPage = () => {
                             {!confirming ? (
                                 <button
                                     onClick={() => setConfirming(true)}
-                                    disabled={paying || !panOk}
+                                    disabled={paying || !panOk || !payReady}
                                     className="mt-4 w-full bg-green-500 text-white py-2 rounded font-medium hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed"
                                 >
-                                    Pay {formatMoney(bill.totalPayable)}
+                                    Pay {shownTotal != null ? formatMoney(shownTotal) : ''}
                                 </button>
                             ) : (
                                 <div className="mt-4 border border-amber-300 bg-amber-50 rounded p-3">
                                     <p className="text-sm text-amber-900 font-medium">
-                                        {formatMoney(bill.totalPayable)} will be deducted from your wallet to pay this bill. This cannot be undone. Continue?
+                                        {formatMoney(shownTotal)} will be deducted from your wallet to pay{' '}
+                                        {isPart
+                                            ? `${formatMoney(shownAmount)} of the ${formatMoney(dueAmount)} bill. The remaining ${formatMoney(dueAmount - Number(shownAmount))} stays due.`
+                                            : 'this bill.'}{' '}
+                                        This cannot be undone. Continue?
                                     </p>
                                     <div className="flex gap-2 mt-3">
                                         <button
