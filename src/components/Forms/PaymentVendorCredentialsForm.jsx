@@ -68,6 +68,19 @@ const InputField = ({ label, name, register, errors, required = false, isEditMod
 //     isActive: z.boolean()
 // });
 
+// The text fields of the form. The server leaves a field out when it is empty in the database; the
+// form needs empty text for those (a missing / null value would fail its own validation).
+const TEXT_FIELDS = [
+    "baseUrlUat", "secretKeyUat", "saltKeyUat", "encryptDecryptKeyUat", "userIdUat",
+    "baseUrlProd", "secretKeyProd", "saltKeyProd", "encryptDecryptKeyProd", "userIdProd"
+];
+
+const withEmptyText = (values) => {
+    const cleaned = { ...values };
+    TEXT_FIELDS.forEach((field) => { cleaned[field] = values[field] ?? ""; });
+    return cleaned;
+};
+
 const defaultForm = {
     vendorId: null,
     productId: null,
@@ -143,7 +156,7 @@ const PaymentVendorCredentialsForm = ({ isOpen = true, onClose = () => { }, defa
 
     const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
         resolver: zodResolver(formSchema),
-        defaultValues: defaultValues || defaultForm,
+        defaultValues: defaultValues ? withEmptyText(defaultValues) : defaultForm,
         mode: "onBlur"
     });
 
@@ -177,7 +190,7 @@ const PaymentVendorCredentialsForm = ({ isOpen = true, onClose = () => { }, defa
     useEffect(() => {
         if (defaultValues) {
             reset({
-                ...defaultValues,
+                ...withEmptyText(defaultValues),
                 vendorId: defaultValues.vendorId,
                 productId: defaultValues.productId
             });
