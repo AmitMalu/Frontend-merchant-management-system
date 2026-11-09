@@ -38,6 +38,17 @@ const PaymentVendorCredentialsTable = () => {
         setOpenForm(true);
     };
 
+    // The list does not carry the keys and user ids; the single-record call does.
+    const handleEdit = async (row) => {
+        try {
+            const res = await api.get(`/payment-vendor-credentials/${row.id}`);
+            setEditing(res.data);
+            setOpenForm(true);
+        } catch (err) {
+            toast.error(err?.response?.data?.message || "Could not load the credentials");
+        }
+    };
+
     const handleSubmit = async (payload) => {
         try {
             if (editing) {
@@ -120,7 +131,7 @@ const PaymentVendorCredentialsTable = () => {
                     </button>
 
                     <button
-                        onClick={() => { setEditing(row.original); setOpenForm(true); }}
+                        onClick={() => handleEdit(row.original)}
                         className="p-1 text-green-600 hover:bg-green-50 rounded"
                     >
                         <Edit size={16} />
