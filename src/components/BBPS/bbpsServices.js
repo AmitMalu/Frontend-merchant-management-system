@@ -1,7 +1,6 @@
 /**
- * Static BBPS service catalogue.
- * When live credentials are available, this can be replaced with
- * a dynamic API call to fetch the operator list per category.
+ * Bill Avenue (BBPS) calls: biller info, bill fetch, bill payment, transaction status and complaints.
+ * Everything here talks to the live backend; the service and provider lists come from the server too.
  */
 
 import api from "../../constants/API/axiosInstance";
@@ -91,7 +90,8 @@ export const fetchBillDetails = async (billerId, customerMobile, fieldValues) =>
     throw err;
   }
 
-  return data;
+  // The payment must reuse this request id (Bill Avenue links a payment to its fetch by it).
+  return { ...data, fetchRequestId: payload.requestId };
 };
 
 /**
@@ -105,10 +105,13 @@ export const fetchBillDetails = async (billerId, customerMobile, fieldValues) =>
  */
 export const payBill = async ({
   merchantId,
+  requestId,
   billerId,
   customerMobile,
+  customerPan,
   inputParams,
   billerResponse,
+  additionalInfo,
   billerAdhoc = "false",
   amount,
   custConvFee = 0,
@@ -117,11 +120,14 @@ export const payBill = async ({
 }) => {
   const payload = {
     merchantId,
+    requestId,
     billerId,
     billerAdhoc,
-    customerInfo: { customerMobile },
+    customerInfo: { customerMobile, ...(customerPan ? { customerPan } : {}) },
     inputParams: { input: inputParams || [] },
     billerResponse,
+    // Echoed back exactly as the bill fetch returned it; Bill Avenue compares it ("additionalInfo value mismatch").
+    ...(additionalInfo ? { additionalInfo } : {}),
     amountInfo: {
       amount,
       currency: "356",
@@ -139,283 +145,27 @@ export const payBill = async ({
 };
 
 /**
- * Live transaction status lookup.
+ * What this payment would take from your wallet: bill amount + service charge.
+ * POST /billpay/config/payment-quote  →  { data: { amount, custConvFee, charges, totalDebit } } (rupees)
+ */
+export const fetchPaymentQuote = async (amount) => {
+  const res = await api.post("/billpay/config/payment-quote", { amount, custConvFee: "0" });
+  return res.data?.data;
+};
+
+/**
+ * Status of one of your own bill payments, by the Bill Avenue transaction ID.
  * POST /billpay/config/transaction-status  →  CommonResponse{ statusCode, message, data: <BillAvenue response> }
  */
-export const fetchTransactionStatusLive = async ({ trackingType, trackingValue, fromDate, toDate }) => {
-  const payload = { trackingType, trackingValue, fromDate, toDate };
-  const res = await api.post("/billpay/config/transaction-status", payload);
+export const fetchTransactionStatusLive = async (txnRefId) => {
+  const res = await api.post("/billpay/config/transaction-status", {
+    trackingType: "TRANS_REF_ID",
+    trackingValue: txnRefId,
+  });
   return res.data; // { statusCode, message, data }
 };
 
-/**
- * Hardcoded UAT sample payloads, sourced from the "UAT TEST DATA_AGT" sheet
- * (Fetch&Pay sheet + quick pay sheet) provided by Bharat Connect, keyed by
- * biller category. Lets testers preview each category's Fetch and Pay /
- * Quick Pay flow — including the payment response used to build the receipt —
- * against the real BBPS UAT sandbox without needing real provider/customer
- * data. Remove once live credentials are confirmed and category/provider
- * lookups are fully dynamic.
- */
-export const UAT_SAMPLES = {
-  "broadband postpaid": {
-    fetchAndPay: {
-      billerId: "DUMMY0000DIG08",
-      mobile: "9898990084",
-      inputParams: [{ paramName: "CustomerId", paramValue: "h696077" }],
-      payResponse: {
-        txnRefId: "CC015323BAAG00032929",
-        responseReason: "Successful",
-        respAmount: "100000",
-        custConvFee: "0",
-        respCustomerName: "Srinivas",
-        respBillDate: "2025-11-19",
-        respBillNumber: "RCRQ/2020-07-17/6418619",
-        respBillPeriod: "MONTHLY",
-        respDueDate: "2025-12-04",
-        approvalRefNumber: "AB123456",
-      },
-    },
-  },
-  "electricity": {
-    fetchAndPay: {
-      billerId: "DELECTRICITY01",
-      mobile: "9898990084",
-      inputParams: [{ paramName: "CustomerId", paramValue: "h696077" }],
-      payResponse: {
-        txnRefId: "CC015334BAAG00034083",
-        responseReason: "Successful",
-        respAmount: "100000",
-        custConvFee: "0",
-        respCustomerName: "Shrinivas",
-        respBillDate: "2025-11-30",
-        respBillNumber: "10001",
-        respBillPeriod: "Monthly",
-        respDueDate: "2025-12-15",
-        approvalRefNumber: "AB123456",
-      },
-    },
-    // From the "quick pay" sheet — OCNS00000TMN02.
-    quickPay: {
-      billerId: "OCNS00000TMN02",
-      mobile: "9898990084",
-      inputParams: [
-        { paramName: "a", paramValue: "10" },
-        { paramName: "a b", paramValue: "20" },
-        { paramName: "a b c", paramValue: "30" },
-        { paramName: "a b c d", paramValue: "40" },
-        { paramName: "a b c d e", paramValue: "50" },
-      ],
-      payResponse: {
-        txnRefId: "CC016131BAAG00058267",
-        responseReason: "Successful",
-        respAmount: "100000",
-        custConvFee: "0",
-        respCustomerName: "Ashish",
-        respBillDate: "2016-07-01",
-        respBillNumber: "12303037",
-        respBillPeriod: "Jul",
-        respDueDate: "2016-07-30",
-        approvalRefNumber: "12345037",
-      },
-    },
-  },
-  "fastag": {
-    fetchAndPay: {
-      billerId: "DUMMYFASTAG001",
-      mobile: "9898990084",
-      inputParams: [{ paramName: "Vehicle Number", paramValue: "MH15AT6555" }],
-      payResponse: {
-        txnRefId: "CC015334BAAG00034085",
-        responseReason: "Successful",
-        respAmount: "100000",
-        custConvFee: "0",
-        respCustomerName: "VENAKATESH",
-        approvalRefNumber: "AB123456",
-      },
-    },
-  },
-  "insurance": {
-    fetchAndPay: {
-      billerId: "DUMGI0000NAT01",
-      mobile: "9892506507",
-      inputParams: [{ paramName: "Policy Number", paramValue: "52157852" }],
-      payResponse: {
-        txnRefId: "CC015334BAAG00034089",
-        responseReason: "Successful",
-        respAmount: "4956400",
-        custConvFee: "0",
-        respCustomerName: "VAIRAMANI D",
-        respBillDate: "2025-11-30",
-        respDueDate: "2025-12-15",
-        approvalRefNumber: "AB123456",
-      },
-    },
-  },
-  "lpg gas": {
-    fetchAndPay: {
-      billerId: "BAPL00000GAS01",
-      mobile: "9892506507",
-      inputParams: [
-        { paramName: "Consumer Number", paramValue: "90881000" },
-        { paramName: "Distributor ID", paramValue: "13645300" },
-      ],
-      payResponse: {
-        txnRefId: "CC015334BAAG00034091",
-        responseReason: "Successful",
-        respAmount: "92300",
-        custConvFee: "0",
-        respCustomerName: "Ramesh Agrawal",
-        respBillNumber: "1123314338567",
-        approvalRefNumber: "1230466000115913",
-      },
-    },
-  },
-  "mobile postpaid": {
-    fetchAndPay: {
-      billerId: "DUMMY0000DIG06",
-      mobile: "9898990084",
-      inputParams: [{ paramName: "Mobile Number", paramValue: "9876543211" }],
-      payResponse: {
-        txnRefId: "CC015335BAAG00035501",
-        responseReason: "Successful",
-        respAmount: "54590",
-        custConvFee: "0",
-        respCustomerName: "Ritesh Shukla",
-        respBillDate: "2025-12-01",
-        respBillNumber: "RCRQ/2020-07-17/6418619",
-        respBillPeriod: "MONTHLY",
-        respDueDate: "2025-12-16",
-        approvalRefNumber: "AB123456",
-      },
-    },
-  },
-  "mobile": {
-    // OTME00005XXZ43 / OTNS00005XXZ43 — the exact Fetch and Pay / Quick Pay
-    // scenario called out in the Bharat Connect brand guidelines. Mobile
-    // numbers per the guidelines doc (9898990084 / 9898990083).
-    fetchAndPay: {
-      billerId: "OTME00005XXZ43",
-      mobile: "9898990084",
-      inputParams: [
-        { paramName: "a", paramValue: "10" },
-        { paramName: "a b", paramValue: "20" },
-        { paramName: "a b c", paramValue: "30" },
-        { paramName: "a b c d", paramValue: "40" },
-        { paramName: "a b c d e", paramValue: "50" },
-      ],
-      payResponse: {
-        txnRefId: "CC015335BAAG00035482",
-        responseReason: "Successful",
-        respAmount: "100000",
-        custConvFee: "0",
-        respCustomerName: "Ashish",
-        respBillDate: "2016-07-01",
-        respBillNumber: "12303037",
-        respBillPeriod: "Jul",
-        respDueDate: "2016-07-30",
-        approvalRefNumber: "12345037",
-      },
-    },
-    quickPay: {
-      billerId: "OTNS00005XXZ43",
-      mobile: "9898990083",
-      inputParams: [
-        { paramName: "a", paramValue: "10" },
-        { paramName: "a b", paramValue: "20" },
-        { paramName: "a b c", paramValue: "30" },
-        { paramName: "a b c d", paramValue: "40" },
-        { paramName: "a b c d e", paramValue: "50" },
-      ],
-      // No payment-response sample exists for OTNS00005XXZ43 in the sheet —
-      // Quick Pay for this category falls back to the "Coming Soon" screen.
-    },
-  },
-  "loan repayment": {
-    fetchAndPay: {
-      billerId: "DLOANREP000001",
-      mobile: "9892506507",
-      inputParams: [{ paramName: "AccNum", paramValue: "30088743370013" }],
-      payResponse: {
-        txnRefId: "CC015335BAAG00035468",
-        responseReason: "Successful",
-        respAmount: "15770000",
-        custConvFee: "0",
-        respCustomerName: "Srinivas",
-        respBillDate: "2025-12-01",
-        respDueDate: "2025-12-16",
-        approvalRefNumber: "AB123456",
-      },
-    },
-  },
-};
-
-/**
- * Look up the UAT sample set for a biller category label. Matches loosely —
- * any category containing "mobile" (Mobile Postpaid, Mobile Prepaid, ...)
- * resolves to the shared OTME/OTNS "mobile" sample.
- */
-export const getUatSample = (serviceName = "") => {
-  const key = serviceName.trim().toLowerCase();
-  if (UAT_SAMPLES[key]) return UAT_SAMPLES[key];
-  if (key.includes("mobile")) return UAT_SAMPLES["mobile"];
-  return null;
-};
-
-// Same dummy agent used throughout the UAT test-data sheet.
-const UAT_AGENT_ID = "CC01CC01513515340681";
-
-const titleCase = (key) =>
-  key.replace(/\b\w/g, (c) => c.toUpperCase());
-
-/**
- * Flatten every UAT_SAMPLES entry (both Fetch and Pay + Quick Pay, wherever a
- * payResponse exists) into records shaped like the real Transaction Status
- * API response (<txnList> per the Bharat Bill Payment System spec: agentId,
- * amount, billerId, txnDate, txnReferenceId, txnStatus, mobile,
- * approvalRefNumber, ...). Lets the Transaction Status screen look up the
- * exact same UAT transactions the Bill Pay flow generates receipts for.
- */
-export const getAllUatTransactions = () => {
-  const records = [];
-  Object.entries(UAT_SAMPLES).forEach(([categoryKey, sample]) => {
-    ["fetchAndPay", "quickPay"].forEach((mode) => {
-      const entry = sample[mode];
-      const payResponse = entry?.payResponse;
-      if (!entry || !payResponse) return;
-      records.push({
-        agentId: UAT_AGENT_ID,
-        amount: payResponse.respAmount,
-        billerId: entry.billerId,
-        billerName: titleCase(categoryKey),
-        txnDate: payResponse.respBillDate ? `${payResponse.respBillDate}T12:00:00+05:30` : null,
-        txnReferenceId: payResponse.txnRefId,
-        txnStatus: /success/i.test(payResponse.responseReason || "") ? "SUCCESS" : (payResponse.responseReason || "UNKNOWN").toUpperCase(),
-        mobile: entry.mobile,
-        approvalRefNumber: payResponse.approvalRefNumber,
-        custConvFee: payResponse.custConvFee,
-        respBillNumber: payResponse.respBillNumber,
-        respBillPeriod: payResponse.respBillPeriod,
-        respCustomerName: payResponse.respCustomerName,
-        respDueDate: payResponse.respDueDate,
-      });
-    });
-  });
-  return records;
-};
-
-export const findUatTransactionByRefId = (refId = "") =>
-  getAllUatTransactions().find(
-    (t) => t.txnReferenceId?.toLowerCase() === refId.trim().toLowerCase()
-  ) || null;
-
-export const findUatTransactionsByMobile = (mobile = "") =>
-  getAllUatTransactions().filter((t) => t.mobile === mobile.trim());
-
-/**
- * The 8 official BBPS complaint dispositions, verbatim from the Bharat
- * Connect frontend demo spec.
- */
+// The dispositions Bill Avenue accepts for a Transaction complaint (the server checks them too).
 export const COMPLAINT_DISPOSITIONS = [
   "Transaction Successful, Amount Debited but services not received",
   "Transaction Successful, Amount Debited but Service Disconnected or Service Stopped",
@@ -427,354 +177,38 @@ export const COMPLAINT_DISPOSITIONS = [
   "Bill Paid but Amount not adjusted or still showing due amount",
 ];
 
-const randomAlphaNumeric = (length) => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let out = "";
-  for (let i = 0; i < length; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
-  return out;
+/**
+ * Your latest successful bill payments, to pick from when raising a complaint.
+ * GET /billpay/complaints/my-transactions  →  { data: [ { txnRefId, billerName, category, amount (rupees), customerMobile, createdAt } ] }
+ */
+export const fetchMyBbpsTransactions = async () => {
+  const res = await api.get("/billpay/complaints/my-transactions");
+  return res.data?.data || [];
 };
 
 /**
- * UAT ONLY — simulates the Complaint Registration API response shape
- * (complaintAssigned / complaintId), since /billpay/extComplaints/register
- * isn't wired up on the backend yet. Remove once live credentials + a real
- * backend endpoint are in place.
+ * Register a complaint about one of your own payments.
+ * POST /billpay/complaints/register  →  { data: { complaintId, status, complaintAssigned, ... } }
  */
-export const registerUatComplaint = () => ({
-  complaintAssigned: "OU12",
-  complaintId: `CC01${randomAlphaNumeric(11)}`,
-  responseCode: "000",
-  responseReason: "SUCCESS",
-});
+export const registerComplaint = async ({ txnRefId, disposition, description }) => {
+  const res = await api.post("/billpay/complaints/register", { txnRefId, disposition, description });
+  return res.data?.data;
+};
 
 /**
- * UAT ONLY — simulates the Complaint Tracking API response shape, keyed off
- * complaintId. Remove once live credentials + a real backend endpoint are
- * in place.
+ * Latest status of one of your own complaints.
+ * POST /billpay/complaints/track  →  { data: { complaintId, status, complaintAssigned, remarks, ... } }
  */
-export const trackUatComplaint = (complaintId = "") => ({
-  complaintId: complaintId.trim(),
-  complaintAssigned: "OU12",
-  complaintStatus: "ASSIGNED",
-  complaintRemarks: "NA",
-  responseCode: "000",
-  responseReason: "SUCCESS",
-});
-
-export const BBPS_SERVICES = [
-  // ── Banking ──────────────────────────────────────────────────────────────
-  {
-    id: "loan_repayment",
-    label: "Loan Repayment",
-    category: "Banking",
-    fields: [
-      { name: "provider",    label: "Select Provider",  type: "select",  required: true  },
-      { name: "loan_number", label: "Loan Account No.", type: "text",    required: true,  placeholder: "Enter loan account number" },
-      { name: "mobile",      label: "Mobile Number",    type: "tel",     required: true,  placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "broadband_postpaid",
-    label: "Broadband Postpaid",
-    category: "Internet / TV",
-    fields: [
-      { name: "provider",    label: "Select Provider",   type: "select", required: true },
-      { name: "account_id",  label: "Account / User ID", type: "text",   required: true, placeholder: "Enter account ID" },
-      { name: "mobile",      label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "housing_society",
-    label: "Housing Society",
-    category: "Home",
-    fields: [
-      { name: "provider",     label: "Select Provider",    type: "select", required: true },
-      { name: "consumer_no",  label: "Consumer Number",    type: "text",   required: true, placeholder: "Enter consumer number" },
-      { name: "mobile",       label: "Mobile Number",      type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "municipal_taxes",
-    label: "Municipal Taxes",
-    category: "Home",
-    fields: [
-      { name: "provider",       label: "Select Provider",      type: "select", required: true },
-      { name: "property_id",    label: "Property / Ward ID",   type: "text",   required: true, placeholder: "Enter property ID" },
-      { name: "mobile",         label: "Mobile Number",        type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "clubs_and_associations",
-    label: "Clubs and Associations",
-    category: "Others",
-    fields: [
-      { name: "provider",     label: "Select Provider",  type: "select", required: true },
-      { name: "member_id",    label: "Member ID",        type: "text",   required: true, placeholder: "Enter member ID" },
-      { name: "mobile",       label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "insurance",
-    label: "Insurance",
-    category: "Banking",
-    fields: [
-      { name: "provider",     label: "Select Provider",  type: "select", required: true },
-      { name: "policy_no",    label: "Policy Number",    type: "text",   required: true, placeholder: "Enter policy number" },
-      { name: "mobile",       label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "gas",
-    label: "Gas",
-    category: "Utilities",
-    fields: [
-      { name: "provider",    label: "Select Provider",   type: "select", required: true },
-      { name: "consumer_no", label: "Consumer Number",   type: "text",   required: true, placeholder: "Enter consumer number" },
-      { name: "mobile",      label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "electricity",
-    label: "Electricity",
-    category: "Utilities",
-    fields: [
-      { name: "provider",    label: "Select Provider",        type: "select", required: true },
-      { name: "consumer_no", label: "Consumer / CA Number",   type: "text",   required: true, placeholder: "Enter consumer number" },
-      { name: "mobile",      label: "Mobile Number",          type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "dth",
-    label: "DTH",
-    category: "Internet / TV",
-    fields: [
-      { name: "provider",      label: "Select Provider",  type: "select", required: true },
-      { name: "subscriber_id", label: "Subscriber ID",    type: "text",   required: true, placeholder: "Enter subscriber ID" },
-      { name: "mobile",        label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "ncmc_recharge",
-    label: "NCMC Recharge",
-    category: "Banking",
-    fields: [
-      { name: "provider",   label: "Select Provider",  type: "select", required: true },
-      { name: "card_no",    label: "Card Number",      type: "text",   required: true, placeholder: "Enter NCMC card number" },
-      { name: "mobile",     label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "subscription",
-    label: "Subscription",
-    category: "Others",
-    fields: [
-      { name: "provider",  label: "Select Provider",  type: "select", required: true },
-      { name: "sub_id",    label: "Subscriber ID",    type: "text",   required: true, placeholder: "Enter subscriber ID" },
-      { name: "mobile",    label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "fastag",
-    label: "Fastag",
-    category: "Banking",
-    fields: [
-      { name: "provider",   label: "Select Provider",   type: "select", required: true },
-      { name: "vehicle_no", label: "Vehicle Number",    type: "text",   required: true, placeholder: "e.g. MH12AB1234" },
-      { name: "mobile",     label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "cable_tv",
-    label: "Cable TV",
-    category: "Internet / TV",
-    fields: [
-      { name: "provider",     label: "Select Provider",   type: "select", required: true },
-      { name: "subscriber_id",label: "Subscriber ID",     type: "text",   required: true, placeholder: "Enter subscriber ID" },
-      { name: "mobile",       label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "echallan",
-    label: "eChallan",
-    category: "Others",
-    fields: [
-      { name: "provider",    label: "Select Provider",   type: "select", required: true },
-      { name: "challan_no",  label: "Challan Number",    type: "text",   required: true, placeholder: "Enter challan number" },
-      { name: "mobile",      label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "landline_postpaid",
-    label: "Landline Postpaid",
-    category: "Mobile",
-    fields: [
-      { name: "provider",    label: "Select Provider",   type: "select", required: true },
-      { name: "landline_no", label: "Landline Number",   type: "tel",    required: true, placeholder: "Enter landline number" },
-      { name: "mobile",      label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "mobile_postpaid",
-    label: "Mobile Postpaid",
-    category: "Mobile",
-    fields: [
-      { name: "provider",  label: "Select Provider",   type: "select", required: true },
-      { name: "mobile_no", label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile number" },
-      { name: "mobile",    label: "Registered Mobile", type: "tel",    required: true, placeholder: "10-digit registered mobile" },
-    ],
-  },
-  {
-    id: "credit_card",
-    label: "Credit Card",
-    category: "Banking",
-    fields: [
-      { name: "provider",  label: "Select Provider",   type: "select", required: true },
-      { name: "card_no",   label: "Card Number",       type: "text",   required: true, placeholder: "16-digit card number" },
-      { name: "mobile",    label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "prepaid_meter",
-    label: "Prepaid Meter",
-    category: "Utilities",
-    fields: [
-      { name: "provider",    label: "Select Provider",    type: "select", required: true },
-      { name: "meter_no",    label: "Meter Number",       type: "text",   required: true, placeholder: "Enter meter number" },
-      { name: "mobile",      label: "Mobile Number",      type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "agent_collection",
-    label: "Agent Collection",
-    category: "Others",
-    fields: [
-      { name: "provider",  label: "Select Provider",  type: "select", required: true },
-      { name: "ref_no",    label: "Reference Number", type: "text",   required: true, placeholder: "Enter reference number" },
-      { name: "mobile",    label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "rental",
-    label: "Rental",
-    category: "Home",
-    fields: [
-      { name: "provider",   label: "Select Provider",  type: "select", required: true },
-      { name: "account_id", label: "Account / Ref ID", type: "text",   required: true, placeholder: "Enter account ID" },
-      { name: "mobile",     label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "lpg_gas",
-    label: "LPG Gas",
-    category: "Utilities",
-    fields: [
-      { name: "provider",      label: "Select Provider",   type: "select", required: true },
-      { name: "consumer_no",   label: "Consumer Number",   type: "text",   required: true, placeholder: "Enter consumer number" },
-      { name: "mobile",        label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "mobile_prepaid",
-    label: "Mobile Prepaid",
-    category: "Mobile",
-    fields: [
-      { name: "provider",  label: "Select Provider",  type: "select", required: true },
-      { name: "mobile_no", label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile number" },
-    ],
-  },
-  {
-    id: "water",
-    label: "Water",
-    category: "Utilities",
-    fields: [
-      { name: "provider",    label: "Select Provider",   type: "select", required: true },
-      { name: "consumer_no", label: "Consumer Number",   type: "text",   required: true, placeholder: "Enter consumer number" },
-      { name: "mobile",      label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "municipal_services",
-    label: "Municipal Services",
-    category: "Home",
-    fields: [
-      { name: "provider",    label: "Select Provider",   type: "select", required: true },
-      { name: "consumer_no", label: "Consumer Number",   type: "text",   required: true, placeholder: "Enter consumer number" },
-      { name: "mobile",      label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "national_pension_system",
-    label: "National Pension System",
-    category: "Banking",
-    fields: [
-      { name: "provider",   label: "Select Provider",  type: "select", required: true },
-      { name: "pran",       label: "PRAN Number",      type: "text",   required: true, placeholder: "12-digit PRAN number" },
-      { name: "mobile",     label: "Mobile Number",    type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "ev_recharge",
-    label: "EV Recharge",
-    category: "Others",
-    fields: [
-      { name: "provider",    label: "Select Provider",   type: "select", required: true },
-      { name: "vehicle_no",  label: "Vehicle Number",    type: "text",   required: true, placeholder: "e.g. MH12AB1234" },
-      { name: "mobile",      label: "Mobile Number",     type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "education_fees",
-    label: "Education Fees",
-    category: "Others",
-    fields: [
-      { name: "provider",    label: "Select Provider",       type: "select", required: true },
-      { name: "student_id",  label: "Student/Admission ID",  type: "text",   required: true, placeholder: "Enter student/admission ID" },
-      { name: "mobile",      label: "Mobile Number",         type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-  {
-    id: "fleet_card_recharge",
-    label: "Fleet Card Recharge",
-    category: "Banking",
-    fields: [
-      { name: "provider",  label: "Select Provider",    type: "select", required: true },
-      { name: "card_no",   label: "Fleet Card Number",  type: "text",   required: true, placeholder: "Enter fleet card number" },
-      { name: "mobile",    label: "Mobile Number",      type: "tel",    required: true, placeholder: "10-digit mobile" },
-    ],
-  },
-];
+export const trackComplaint = async (complaintId) => {
+  const res = await api.post("/billpay/complaints/track", { complaintId });
+  return res.data?.data;
+};
 
 /**
- * Static provider list per service (UAT demo data).
- * Replace with API call when live credentials are available.
+ * Your complaints, newest first.
+ * GET /billpay/complaints
  */
-export const BBPS_PROVIDERS = {
-  loan_repayment:       ["SBI", "HDFC Bank", "ICICI Bank", "Axis Bank", "Kotak Mahindra Bank", "PNB", "Bank of Baroda"],
-  broadband_postpaid:   ["Jio Fiber", "Airtel Broadband", "BSNL Broadband", "ACT Fibernet", "Hathway"],
-  housing_society:      ["NoBrokerHood", "MyGate", "Apnacomplex", "Society Connect"],
-  municipal_taxes:      ["MCGM Mumbai", "BBMP Bengaluru", "NDMC Delhi", "AMC Ahmedabad", "PMC Pune"],
-  clubs_and_associations: ["BCCI", "Golf Club India", "Lions Club", "Rotary Club"],
-  insurance:            ["LIC", "SBI Life", "HDFC Life", "ICICI Prudential", "Bajaj Allianz"],
-  gas:                  ["IGL Delhi", "MGL Mumbai", "Gujarat Gas", "Adani Gas"],
-  electricity:          ["MSEDCL", "BESCOM", "TPDDL Delhi", "CESC Kolkata", "UPPCL"],
-  dth:                  ["Tata Play", "Airtel Digital TV", "Sun Direct", "Dish TV", "D2H"],
-  ncmc_recharge:        ["DMRC", "MMRDA", "BMRCL", "Chennai Metro"],
-  subscription:         ["Netflix", "Amazon Prime", "Hotstar", "SonyLIV"],
-  fastag:               ["Paytm Payments Bank", "HDFC Bank FASTag", "ICICI Bank FASTag", "SBI FASTag", "Axis Bank FASTag"],
-  cable_tv:             ["Hathway Cable", "SITI Networks", "DEN Networks", "IN Digital"],
-  echallan:             ["MoRTH eChallan", "Delhi Traffic Police", "Maharashtra Police"],
-  landline_postpaid:    ["BSNL", "MTNL Mumbai", "MTNL Delhi"],
-  mobile_postpaid:      ["Jio", "Airtel", "Vi (Vodafone Idea)", "BSNL", "MTNL"],
-  credit_card:          ["SBI Card", "HDFC Credit Card", "ICICI Credit Card", "Axis Bank", "Kotak Mahindra"],
-  prepaid_meter:        ["MSEDCL", "BESCOM", "TPDDL", "UPPCL", "CESC"],
-  agent_collection:     ["General Collection"],
-  rental:               ["NoBroker", "MagicBricks", "Housing.com"],
-  lpg_gas:              ["HP Gas", "Bharat Gas", "Indane (IOC)"],
-  mobile_prepaid:       ["Jio", "Airtel", "Vi (Vodafone Idea)", "BSNL"],
-  water:                ["MCGM", "BWSSB Bengaluru", "DJB Delhi", "PMC Pune"],
-  municipal_services:   ["MCGM Mumbai", "BBMP Bengaluru", "NDMC Delhi", "AMC Ahmedabad"],
-  national_pension_system: ["NPS Trust (NSDL)", "NPS Trust (CAMS)"],
-  ev_recharge:          ["Tata Power EZ Charge", "EESL", "Ather Grid", "ChargeZone", "BPCL"],
-  fleet_card_recharge:  ["HPCL Fleet Card", "IOCL Fleet Card", "BPCL Fleet Card"],
-  education_fees:       ["DPS", "Ryan International", "Amity University", "Manipal University", "VIT"],
+export const fetchMyComplaints = async () => {
+  const res = await api.get("/billpay/complaints");
+  return res.data?.data || [];
 };

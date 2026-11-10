@@ -1,13 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { MdSearch } from "react-icons/md";
 import { TopBar, ReceiptRow } from "./BBPSPage";
-import { findUatTransactionByRefId, findUatTransactionsByMobile, fetchTransactionStatusLive } from "./bbpsServices";
+import { fetchTransactionStatusLive, fetchMyBbpsTransactions } from "./bbpsServices";
 import { toast } from "react-toastify";
-
-// UAT ONLY — fixed mock OTP, no real SMS gateway wired up yet. Remove once
-// live credentials + a real OTP provider are in place.
-const MOCK_OTP = "123456";
 
 const TransactionResultRow = ({ txn }) => (
   <div className="border border-gray-100 rounded-xl px-4 py-2">
@@ -34,25 +30,17 @@ const TransactionResultRow = ({ txn }) => (
 const TransactionStatusPage = () => {
   const navigate = useNavigate();
 
-  const [searchMode, setSearchMode] = useState("REF_ID"); // REF_ID | MOBILE
   const [refId, setRefId] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState(null); // null = no search yet, [] = searched, no results
+  const [recent, setRecent] = useState([]);
 
-  const handleSearchModeChange = (mode) => {
-    setSearchMode(mode);
-    setResults(null);
-    setOtpSent(false);
-    setOtp("");
-  };
+  // Your own latest payments, so you can pick one instead of typing the ID.
+  useEffect(() => {
+    fetchMyBbpsTransactions().then(setRecent).catch(() => setRecent([]));
+  }, []);
 
-  // Real API's txnList doesn't include a friendly biller name (only
-  // billerId), unlike the UAT fixtures — fall back to billerId for display.
+  // The status answer has no friendly biller name (only billerId), so show the biller ID.
   const mapVendorTxnList = (txnList) =>
     (txnList || []).map((t) => ({
       billerName: t.billerId,
@@ -66,15 +54,16 @@ const TransactionStatusPage = () => {
       approvalRefNumber: t.approvalRefNumber,
     }));
 
-  // ── Live search — calls the real /billpay/config/transaction-status endpoint ──
-  const handleRefIdSearch = async () => {
-    if (!refId.trim()) {
+  // Status of one of your own payments, by its B-Connect Txn ID.
+  const handleSearch = async (idToSearch = refId) => {
+    const id = (idToSearch || "").trim();
+    if (!id) {
       toast.error("Enter a B-Connect Txn ID");
       return;
     }
     setSearching(true);
     try {
-      const res = await fetchTransactionStatusLive({ trackingType: "TRANS_REF_ID", trackingValue: refId.trim() });
+      const res = await fetchTransactionStatusLive(id);
       const vendorData = res?.data;
       if (res?.statusCode !== 200 || !vendorData || vendorData.responseCode !== "000") {
         const msg = vendorData?.errorInfo?.error?.[0]?.errorMessage || res?.message || "Transaction not found";
@@ -91,75 +80,6 @@ const TransactionStatusPage = () => {
     }
   };
 
-  // 🧪 UAT ONLY — remove once live confirmed
-  const handleSampleRefIdSearch = () => {
-    if (!refId.trim()) {
-      toast.error("Enter a B-Connect Txn ID");
-      return;
-    }
-    setSearching(true);
-    const match = findUatTransactionByRefId(refId);
-    setResults(match ? [match] : []);
-    setSearching(false);
-  };
-
-  const handleSendOtp = () => {
-    if (!/^\d{10}$/.test(mobile.trim())) {
-      toast.error("Enter a valid 10-digit mobile number");
-      return;
-    }
-    setOtpSent(true);
-    toast.info(`UAT demo — use OTP ${MOCK_OTP}`);
-  };
-
-  // ── Live search — calls the real /billpay/config/transaction-status endpoint ──
-  const handleVerifyAndSearch = async () => {
-    if (otp.trim() !== MOCK_OTP) {
-      toast.error("Invalid OTP");
-      return;
-    }
-    setSearching(true);
-    try {
-      const res = await fetchTransactionStatusLive({
-        trackingType: "MOBILE_NO",
-        trackingValue: mobile.trim(),
-        fromDate: fromDate || undefined,
-        toDate: toDate || undefined,
-      });
-      const vendorData = res?.data;
-      if (res?.statusCode !== 200 || !vendorData || vendorData.responseCode !== "000") {
-        const msg = vendorData?.errorInfo?.error?.[0]?.errorMessage || res?.message || "No transactions found";
-        toast.error(msg);
-        setResults([]);
-        return;
-      }
-      setResults(mapVendorTxnList(vendorData.txnList));
-    } catch (err) {
-      toast.error(err?.response?.data?.message || err.message || "Search failed");
-      setResults([]);
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  // 🧪 UAT ONLY — remove once live confirmed
-  const handleSampleVerifyAndSearch = () => {
-    if (otp.trim() !== MOCK_OTP) {
-      toast.error("Invalid OTP");
-      return;
-    }
-    setSearching(true);
-    const matches = findUatTransactionsByMobile(mobile).filter((t) => {
-      if (!fromDate && !toDate) return true;
-      const txnDay = t.txnDate?.slice(0, 10);
-      if (fromDate && txnDay < fromDate) return false;
-      if (toDate && txnDay > toDate) return false;
-      return true;
-    });
-    setResults(matches);
-    setSearching(false);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <TopBar title="Transaction Status" onBack={() => navigate(-1)} />
@@ -167,149 +87,55 @@ const TransactionStatusPage = () => {
       <div className="flex-1 px-6 py-8">
         <div className="max-w-4xl bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-5">
 
-          {/* Search mode */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Search By <span className="text-red-500">*</span>
-            </label>
-            <div className="flex flex-wrap gap-3">
-              {[
-                { value: "REF_ID", label: "B-Connect Txn ID" },
-                { value: "MOBILE", label: "Mobile Number & Date Range" },
-              ].map((opt) => (
-                <label
-                  key={opt.value}
-                  className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm font-medium cursor-pointer transition-colors ${
-                    searchMode === opt.value
-                      ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                      : "border-gray-300 bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="searchMode"
-                    checked={searchMode === opt.value}
-                    onChange={() => handleSearchModeChange(opt.value)}
-                    className="accent-indigo-700"
-                  />
-                  {opt.label}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Search fields */}
           <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-            {searchMode === "REF_ID" ? (
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="min-w-[260px]">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    B-Connect Txn ID <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={refId}
-                    onChange={(e) => setRefId(e.target.value)}
-                    placeholder="e.g. CC015323BAAG00032929"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <button
-                  onClick={handleRefIdSearch}
-                  disabled={searching}
-                  className="px-6 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  <MdSearch /> Search
-                </button>
-                {/* 🧪 UAT ONLY — remove once live confirmed */}
-                <button
-                  onClick={handleSampleRefIdSearch}
-                  disabled={searching}
-                  title="Look up hardcoded UAT sample transactions"
-                  className="px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 border-2 border-amber-300 flex items-center gap-1"
-                >
-                  🧪 SAMPLE
-                </button>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[260px]">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  B-Connect Txn ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={refId}
+                  onChange={(e) => setRefId(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+                  placeholder="Transaction ID from your receipt"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Mobile Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      value={mobile}
-                      onChange={(e) => { setMobile(e.target.value.replace(/\D/g, "").slice(0, 10)); setOtpSent(false); }}
-                      placeholder="10-digit mobile"
-                      maxLength={10}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">From Date</label>
-                    <input
-                      type="date"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">To Date</label>
-                    <input
-                      type="date"
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                {!otpSent ? (
-                  <button
-                    onClick={handleSendOtp}
-                    className="px-6 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors"
-                  >
-                    Send OTP
-                  </button>
-                ) : (
-                  <div className="flex flex-wrap items-end gap-3">
-                    <div className="min-w-[160px]">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Enter OTP <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        placeholder="6-digit OTP"
-                        maxLength={6}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <button
-                      onClick={handleVerifyAndSearch}
-                      disabled={searching}
-                      className="px-6 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors disabled:opacity-50 flex items-center gap-2"
-                    >
-                      <MdSearch /> Verify &amp; Search
-                    </button>
-                    {/* 🧪 UAT ONLY — remove once live confirmed */}
-                    <button
-                      onClick={handleSampleVerifyAndSearch}
-                      disabled={searching}
-                      title="Look up hardcoded UAT sample transactions"
-                      className="px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 border-2 border-amber-300 flex items-center gap-1"
-                    >
-                      🧪 SAMPLE
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+              <button
+                onClick={() => handleSearch()}
+                disabled={searching}
+                className="px-6 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {searching
+                  ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  : <MdSearch />}
+                Search
+              </button>
+            </div>
+            <p className="text-xs text-gray-500">You can check the status of your own bill payments only.</p>
           </div>
+
+          {/* Your latest payments */}
+          {recent.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold text-gray-700">Your recent payments</h3>
+              <div className="max-h-56 overflow-y-auto space-y-2">
+                {recent.map((t) => (
+                  <button
+                    key={t.txnRefId}
+                    onClick={() => { setRefId(t.txnRefId); handleSearch(t.txnRefId); }}
+                    disabled={searching}
+                    className="w-full text-left px-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  >
+                    <span className="font-semibold text-gray-800">{t.billerName || t.category || "Bill payment"}</span>
+                    <span className="text-gray-500 ml-2 font-mono text-xs">{t.txnRefId}</span>
+                    <span className="text-gray-500 ml-2">₹{Number(t.amount).toFixed(2)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Results */}
           {results !== null && (

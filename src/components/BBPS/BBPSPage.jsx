@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MdChevronLeft, MdClose } from "react-icons/md";
-import { BBPS_SERVICES, fetchBillerInfo, fetchBillDetails, mapDataTypeToInputType, getUatSample, payBill } from "./bbpsServices";
+import { fetchBillerInfo, fetchBillDetails, mapDataTypeToInputType, payBill, fetchPaymentQuote } from "./bbpsServices";
 import { BharatConnectLogo, BeAssuredLogo } from "./brandLogos";
-import { sendTransactionSuccessSms } from "./smsService";
 import bharatConnectSonic from "../../assets/bbps-brand/bharat-connect-sonic.mp3";
 import api from "../../constants/API/axiosInstance";
 import { toast } from "react-toastify";
@@ -69,17 +68,24 @@ const FloatingInput = ({ label, value, onChange, type = "text", placeholder = ""
 );
 
 // ─── Bill Details Modal ───────────────────────────────────────────────────────
-const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uatSampleEntry, onClose }) => {
+const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, onClose }) => {
   const [amount, setAmount]         = useState("");
   const [amountError, setAmountError] = useState("");
   const [paying, setPaying]         = useState(false);
-  const [comingSoon, setComingSoon] = useState(false);
   const [receipt, setReceipt]       = useState(null);
   // Stage-3 of the brand journey is two screens, not one: a "Payment Successful"
   // confirmation (B Assured + sonic branding) shown first, then the itemized
   // receipt. This flag gates which of the two is currently shown.
   const [showReceiptDetails, setShowReceiptDetails] = useState(false);
   const sonicRef                    = useRef(null);
+  // What this payment will take from the wallet (bill amount + service charge), from the server.
+  const [quote, setQuote]           = useState(null);
+  const [quoteError, setQuoteError] = useState("");
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  // RBI rule: a cash payment of Rs.50,000 or more must carry the customer's PAN.
+  const [pan, setPan]               = useState("");
+  const [panError, setPanError]     = useState("");
+  const needsPan = Number(amount) >= 50000;
 
   const billerResp     = billResult?.billerResponse   || {};
   const inputEcho      = billResult?.inputParams?.input || [];
@@ -91,6 +97,32 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
       setAmount((Number(billerResp.billAmount) / 100).toFixed(2));
     }
   }, []);
+
+  // Whenever the amount changes, ask the server what the wallet debit will be.
+  useEffect(() => {
+    const value = Number(amount);
+    if (!amount || isNaN(value) || value <= 0) {
+      setQuote(null);
+      setQuoteError("");
+      return undefined;
+    }
+    let cancelled = false;
+    setQuoteLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const q = await fetchPaymentQuote(value);
+        if (!cancelled) { setQuote(q); setQuoteError(""); }
+      } catch (e) {
+        if (!cancelled) {
+          setQuote(null);
+          setQuoteError(e?.response?.data?.message || "Could not work out the charges");
+        }
+      } finally {
+        if (!cancelled) setQuoteLoading(false);
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [amount]);
 
   // Amount constraints from additionalInfo
   const getConstraints = () => {
@@ -112,11 +144,6 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
     return "";
   };
 
-  // UAT-hardcoded payment response for this category/mode (if any) — used by
-  // the SAMPLE pay path below to build a receipt without calling the live
-  // API. Remove once live credentials are fully confirmed.
-  const uatPayResponse = uatSampleEntry?.payResponse;
-
   // Quick Pay skips bill-fetch entirely, so billerResponse comes back empty
   // (see handleQuickPay in BBPSServiceForm) — that's the same signal used
   // here to tell Bill Avenue this is a quickPay=Y request.
@@ -127,6 +154,12 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
     const err = validateAmount(amount);
     if (err) { setAmountError(err); return; }
     setAmountError("");
+
+    if (needsPan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.trim().toUpperCase())) {
+      setPanError("Enter the customer's PAN (for example ABCDE1234F)");
+      return;
+    }
+    setPanError("");
 
     const merchantId = Number(localStorage.getItem("customerId"));
     if (!merchantId) {
@@ -140,10 +173,14 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
 
       const res = await payBill({
         merchantId,
+        // same request id as the bill fetch (none for Quick Pay, which has no fetch)
+        requestId: isQuickPay ? undefined : billResult?.fetchRequestId,
         billerId: billerInfo?.billerId,
-        customerMobile: customerMobile || uatSampleEntry?.mobile,
+        customerMobile,
+        customerPan: needsPan ? pan.trim().toUpperCase() : undefined,
         inputParams: inputEcho,
         billerResponse: billResult?.billerResponse,
+        additionalInfo: billResult?.additionalInfo,
         amount: billAmountRupees,
         custConvFee: 0,
         paymentMode: method,
@@ -163,14 +200,13 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
       const ccfRupees        = vendorData.custConvFee ? Number(vendorData.custConvFee) / 100 : 0;
       const totalAmountRupees = billAmountRupees + ccfRupees;
       const txnDateTime      = new Date().toLocaleString("en-IN");
-      const consumerNo       = inputEcho[0]?.paramValue || vendorData.respBillNumber || "";
 
       setReceipt({
         txnRefId: vendorData.txnRefId,
         billerId: billerInfo?.billerId,
         billerName: service?.serviceName,
         customerName: vendorData.respCustomerName || billerResp.customerName,
-        customerNumber: customerMobile || uatSampleEntry?.mobile,
+        customerNumber: customerMobile,
         billDate: vendorData.respBillDate || billerResp.billDate,
         billPeriod: vendorData.respBillPeriod || billerResp.billPeriod,
         billNumber: vendorData.respBillNumber || billerResp.billNumber,
@@ -180,81 +216,17 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
         totalAmount: totalAmountRupees,
         txnDateTime,
         initiatingChannel: "WEB",
-        paymentMode: method,
+        paymentMode: quote?.paymentMode || method,
         status: vendorData.responseReason || "Successful",
         approvalNumber: vendorData.approvalRefNumber,
       });
 
       sonicRef.current?.play().catch(() => {});
-
-      sendTransactionSuccessSms({
-        amount: totalAmountRupees.toFixed(2),
-        billerName: service?.serviceName,
-        consumerNo,
-        txnRefId: vendorData.txnRefId,
-        dateTime: txnDateTime,
-        paymentChannel: method,
-      });
     } catch (e) {
       toast.error(e?.response?.data?.message || e.message || "Payment failed");
     } finally {
       setPaying(false);
     }
-  };
-
-  // ── 🧪 SAMPLE Pay (UAT) — remove once live confirmed ────────────────────────
-  const handleSamplePay = async (method) => {
-    const err = validateAmount(amount);
-    if (err) { setAmountError(err); return; }
-    setAmountError("");
-
-    if (!uatPayResponse) {
-      setComingSoon(true);
-      return;
-    }
-
-    // The amount field is user-editable and already validated above — it must
-    // win over the hardcoded UAT sample amount, so the receipt/SMS reflect
-    // whatever the user actually entered rather than the fixture value.
-    const billAmountRupees = Number(amount) || 0;
-    const ccfRupees        = uatPayResponse.custConvFee ? Number(uatPayResponse.custConvFee) / 100 : 0;
-    const totalAmountRupees = billAmountRupees + ccfRupees;
-    const txnDateTime      = new Date().toLocaleString("en-IN");
-    const consumerNo       = inputEcho[0]?.paramValue || uatPayResponse.respBillNumber || "";
-
-    setReceipt({
-      txnRefId: uatPayResponse.txnRefId,
-      billerId: uatSampleEntry?.billerId,
-      billerName: service?.serviceName,
-      customerName: uatPayResponse.respCustomerName || billerResp.customerName,
-      customerNumber: uatSampleEntry?.mobile || customerMobile,
-      billDate: uatPayResponse.respBillDate || billerResp.billDate,
-      billPeriod: uatPayResponse.respBillPeriod || billerResp.billPeriod,
-      billNumber: uatPayResponse.respBillNumber || billerResp.billNumber,
-      dueDate: uatPayResponse.respDueDate || billerResp.dueDate,
-      billAmount: billAmountRupees,
-      ccf: ccfRupees,
-      totalAmount: totalAmountRupees,
-      txnDateTime,
-      initiatingChannel: "WEB",
-      paymentMode: method,
-      status: uatPayResponse.responseReason || "Successful",
-      approvalNumber: uatPayResponse.approvalRefNumber,
-    });
-
-    // Sonic branding must play simultaneously with the B Assured display —
-    // trigger it here, inside the click handler, so it counts as
-    // user-initiated for browser autoplay policies.
-    sonicRef.current?.play().catch(() => {});
-
-    sendTransactionSuccessSms({
-      amount: totalAmountRupees.toFixed(2),
-      billerName: service?.serviceName,
-      consumerNo,
-      txnRefId: uatPayResponse.txnRefId,
-      dateTime: txnDateTime,
-      paymentChannel: method,
-    });
   };
 
   // Build all display fields:
@@ -317,7 +289,7 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
             /* ── Stage-3, screen 1: Payment Successful confirmation — B Assured
                logo top-right of the screen, per vendor (Bill Avenue) BBPS UAT
                review email (2026-09-15). Sonic branding plays alongside this
-               screen (triggered in handlePay/handleSamplePay). ── */
+               screen (triggered in handlePay). ── */
             <div className="flex flex-col items-center justify-center py-10 gap-4 bg-white relative">
               <div className="absolute top-0 right-0">
                 <BeAssuredLogo />
@@ -359,22 +331,6 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
                 <ReceiptRow label="Approval Number" value={receipt.approvalNumber} />
               </div>
             </div>
-          ) : comingSoon ? (
-            /* ── Coming Soon screen ── */
-            <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <div className="text-6xl">🚀</div>
-              <h3 className="text-2xl font-bold text-indigo-700 tracking-wide">Coming Soon!</h3>
-              <p className="text-sm text-gray-500 text-center max-w-xs">
-                Payment integration is under review by Bill Avenue.<br />
-                Live credentials will be activated shortly.
-              </p>
-              <button
-                onClick={() => setComingSoon(false)}
-                className="mt-2 px-6 py-2 border border-indigo-300 text-indigo-600 text-sm rounded-full hover:bg-indigo-50 transition-colors"
-              >
-                Go Back
-              </button>
-            </div>
           ) : (
             <>
               {/* Read-only fields grid */}
@@ -410,6 +366,52 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
                   {amountError && <p className="text-red-500 text-[10px] mt-1">{amountError}</p>}
                 </div>
               </div>
+
+              {/* PAN: needed for cash payments of Rs.50,000 or more */}
+              {needsPan && (
+                <div className="relative border border-amber-400 rounded-lg px-3 pt-4 pb-2 bg-white">
+                  <span className="absolute top-1 left-3 text-[10px] text-amber-600 font-medium">
+                    Customer PAN (required for payments of ₹50,000 or more)
+                  </span>
+                  <input
+                    type="text"
+                    value={pan}
+                    maxLength={10}
+                    onChange={(e) => { setPan(e.target.value.toUpperCase()); setPanError(""); }}
+                    placeholder="ABCDE1234F"
+                    className="w-full text-sm text-gray-800 bg-transparent focus:outline-none mt-0.5 uppercase"
+                  />
+                  {panError && <p className="text-red-500 text-[10px] mt-1">{panError}</p>}
+                </div>
+              )}
+
+              {/* What will leave the wallet */}
+              {(quote || quoteError || quoteLoading) && (
+                <div className="border border-indigo-100 bg-indigo-50 rounded-lg px-4 py-3 text-sm">
+                  {quoteError ? (
+                    <p className="text-red-600">{quoteError}</p>
+                  ) : quote ? (
+                    <div className={`space-y-1 ${quoteLoading ? "opacity-60" : ""}`}>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Bill amount</span><span>₹{Number(quote.amount).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Service charges</span><span>₹{Number(quote.charges).toFixed(2)}</span>
+                      </div>
+                      {Number(quote.custConvFee) > 0 && (
+                        <div className="flex justify-between text-gray-600">
+                          <span>Convenience fee</span><span>₹{Number(quote.custConvFee).toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-gray-800 border-t border-indigo-200 pt-1">
+                        <span>Total to be debited from wallet</span><span>₹{Number(quote.totalDebit).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">Working out the charges…</p>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -433,26 +435,15 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, uat
               </button>
             )}
           </div>
-        ) : !comingSoon && (
+        ) : (
           <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
-            {/* 🧪 UAT ONLY — remove once live confirmed */}
-            {uatPayResponse && (
-              <button
-                onClick={() => handleSamplePay("WALLET")}
-                disabled={paying}
-                title="Build receipt from hardcoded UAT sample data"
-                className="px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 border-2 border-amber-300 flex items-center gap-1"
-              >
-                🧪 SAMPLE PAY
-              </button>
-            )}
             <button
               onClick={() => handlePay("WALLET")}
-              disabled={paying}
+              disabled={paying || !!quoteError}
               className="px-10 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {paying && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
-              Pay
+              {quote && !quoteError ? `Pay ₹${Number(quote.totalDebit).toFixed(2)}` : "Pay"}
             </button>
           </div>
         )}
@@ -472,8 +463,9 @@ const BBPSServiceGrid = ({ onSelectService }) => {
       try {
         const res = await api.post("/billpay/config/services", { vendorName: VENDOR_NAME });
         setServices(res.data?.data || []);
-      } catch {
-        setServices(BBPS_SERVICES.map((s) => ({ serviceName: s.label, serviceKey: s.id })));
+      } catch (err) {
+        setServices([]);
+        toast.error(err?.response?.data?.message || "Could not load the bill categories. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -542,7 +534,6 @@ const BBPSServiceForm = ({ service, onBack }) => {
   const [mobileError, setMobileError]               = useState("");
   const [fieldErrors, setFieldErrors]               = useState({});
   const [fetching, setFetching]                     = useState(false);
-  const [sampleFetching, setSampleFetching]         = useState(false);
   const [billResult, setBillResult]                 = useState(null);
   const [fetchError, setFetchError]                 = useState(null);
   const [showModal, setShowModal]                   = useState(false);
@@ -648,7 +639,7 @@ const BBPSServiceForm = ({ service, onBack }) => {
       if (inner?.responseCode && inner.responseCode !== "000") {
         setFetchError({ message: `Error code: ${inner.responseCode}`, errors: inner.errorList || [] });
       } else {
-        applyBillResult(inner);
+        applyBillResult({ ...inner, fetchRequestId: result.fetchRequestId });
       }
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || "Failed to fetch bill details.";
@@ -665,54 +656,7 @@ const BBPSServiceForm = ({ service, onBack }) => {
     applyBillResult({ billerResponse: {}, inputParams: { input: inputList } });
   };
 
-  // ── Sample Quick Pay (UAT) — remove once live confirmed ─────────────────────
-  const handleSampleQuickPay = () => {
-    const sample = getUatSample(service.serviceName)?.quickPay;
-    if (!sample) return;
-    applyBillResult({ billerResponse: {}, inputParams: { input: sample.inputParams } });
-  };
-
-  // ── Sample Fetch (UAT) — remove once live confirmed ─────────────────────────
-  // Payload is looked up per biller category from the UAT test-data sheet,
-  // so every category with a known sample (Fastag, Loan Repayment, Mobile,
-  // Broadband Postpaid, ...) can be previewed, not just one hardcoded biller.
-  const handleSampleFetch = async () => {
-    const sample = getUatSample(service.serviceName)?.fetchAndPay;
-    if (!sample) return;
-
-    setSampleFetching(true);
-    setBillResult(null);
-    setFetchError(null);
-    const payload = {
-      agentId: "CC01CC01513515340681",
-      agentDeviceInfo: { ip: "192.168.2.73", initChannel: "AGT", mac: "01-23-45-67-89-ab" },
-      customerInfo: { customerMobile: sample.mobile, customerEmail: "", customerAdhaar: "", customerPan: "" },
-      billerId: sample.billerId,
-      inputParams: { input: sample.inputParams },
-    };
-    console.log("🧪 Sample payload:", JSON.stringify(payload, null, 2));
-    try {
-      const res = await api.post("/billpay/config/bill-fetch", payload);
-      console.log("🧪 Sample response:", res.data);
-      // Backend wraps response: { statusCode, message, data: { responseCode, billerResponse, ... } }
-      const inner = res.data?.data ?? res.data;
-      if (inner?.responseCode && inner.responseCode !== "000") {
-        setFetchError({ message: `Error code: ${inner.responseCode}`, errors: inner.errorList || [] });
-      } else if (inner?.billerResponse) {
-        applyBillResult(inner);
-      } else {
-        setFetchError({ message: `Unexpected: ${JSON.stringify(res.data).slice(0, 200)}`, errors: [] });
-      }
-    } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || "Sample fetch failed";
-      setFetchError({ message: String(msg), errors: [] });
-    } finally {
-      setSampleFetching(false);
-    }
-  };
-
-  const isLoading = fetching || sampleFetching || loadingBiller;
-  const uatSample = getUatSample(service.serviceName);
+  const isLoading = fetching || loadingBiller;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -838,7 +782,7 @@ const BBPSServiceForm = ({ service, onBack }) => {
                 }
               </div>
 
-              {/* Fetch/Quick Pay + Sample buttons */}
+              {/* Fetch / Quick Pay buttons */}
               {!loadingBiller && (
                 <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-gray-200">
                   {payMode === "QUICK_PAY" ? (
@@ -850,18 +794,6 @@ const BBPSServiceForm = ({ service, onBack }) => {
                       >
                         Proceed to Pay
                       </button>
-
-                      {/* 🧪 UAT ONLY — remove once live confirmed */}
-                      {uatSample?.quickPay && (
-                        <button
-                          onClick={handleSampleQuickPay}
-                          disabled={isLoading}
-                          title="Use hardcoded UAT Quick Pay data"
-                          className="px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 border-2 border-amber-300 flex items-center gap-1"
-                        >
-                          🧪 SAMPLE
-                        </button>
-                      )}
                     </>
                   ) : (
                     <>
@@ -875,22 +807,6 @@ const BBPSServiceForm = ({ service, onBack }) => {
                         ) : null}
                         Fetch Details
                       </button>
-
-                      {/* 🧪 UAT ONLY — remove once live confirmed */}
-                      {uatSample?.fetchAndPay && (
-                        <button
-                          onClick={handleSampleFetch}
-                          disabled={isLoading}
-                          title="Send hardcoded UAT payload"
-                          className="px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-full hover:bg-amber-600 transition-colors disabled:opacity-50 border-2 border-amber-300 flex items-center gap-1"
-                        >
-                          {sampleFetching
-                            ? <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
-                            : "🧪"
-                          }
-                          SAMPLE
-                        </button>
-                      )}
                     </>
                   )}
                 </div>
@@ -928,7 +844,6 @@ const BBPSServiceForm = ({ service, onBack }) => {
           service={service}
           billerInfo={billerInfo}
           customerMobile={customerMobile}
-          uatSampleEntry={payMode === "QUICK_PAY" ? uatSample?.quickPay : uatSample?.fetchAndPay}
           onClose={() => setShowModal(false)}
         />
       )}

@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 
 const PaymentVendorCredentialsForm = lazy(() => import("../Forms/PaymentVendorCredentialsForm"));
 const PaymentVendorCredentialsView = lazy(() => import("../View/PaymentVendorCredentialsView"));
+const BillAvenueBillerSyncModal = lazy(() => import("../Forms/BillAvenueBillerSyncModal"));
 
 const PaymentVendorCredentialsTable = () => {
 
@@ -19,6 +20,7 @@ const PaymentVendorCredentialsTable = () => {
     const [globalFilter, setGlobalFilter] = useState("");
     const [openForm, setOpenForm] = useState(false);
     const [openView, setOpenView] = useState(false);
+    const [openBillerSync, setOpenBillerSync] = useState(false);
     const [editing, setEditing] = useState(null);
     const [viewing, setViewing] = useState(null);
 
@@ -172,6 +174,15 @@ const PaymentVendorCredentialsTable = () => {
                 buttonColor="bg-indigo-600 hover:bg-indigo-700"
             />
 
+            <div className="mb-4 flex justify-end">
+                <button
+                    onClick={() => setOpenBillerSync(true)}
+                    className="px-4 py-2 text-sm border border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-50"
+                >
+                    Sync Bill Avenue Billers
+                </button>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm">
                 <TableHeader
                     title="Credentials List"
@@ -191,6 +202,12 @@ const PaymentVendorCredentialsTable = () => {
                         defaultValues={editing}
                         onSubmit={handleSubmit}
                     />
+                </Suspense>
+            )}
+
+            {openBillerSync && (
+                <Suspense fallback={<FormShimmer />}>
+                    <BillAvenueBillerSyncModal isOpen={openBillerSync} onClose={() => setOpenBillerSync(false)} />
                 </Suspense>
             )}
 

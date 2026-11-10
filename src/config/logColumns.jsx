@@ -709,7 +709,9 @@ export const getLogColumns = (tableType, openModal) => {
                 PAY_BILL: 'Pay CC Bill',
                 RAISE_COMPLAINT: 'Raise Complaint',
                 COMPLAINT_STATUS: 'Complaint Status',
+                TXN_STATUS: 'Transaction Status',
             };
+            const vendorLabels = { SUIVREPAY: 'SuivrePay', BILLAVENUE: 'Bill Avenue' };
             const outcomeStyles = {
                 SUCCESS: 'bg-green-100 text-green-800',
                 REFUSED: 'bg-red-100 text-red-800',
@@ -744,6 +746,15 @@ export const getLogColumns = (tableType, openModal) => {
                                     {' '}({row.original.customerType === 'FRANCHISE' ? 'Franchise' : 'Merchant'} #{row.original.merchantId})
                                 </span>
                             ) : null}
+                        </div>
+                    ),
+                },
+                {
+                    accessorKey: 'vendor',
+                    header: 'Vendor',
+                    cell: ({ row }) => (
+                        <div className="text-sm text-gray-900 whitespace-nowrap">
+                            {vendorLabels[row.original.vendor] || row.original.vendor || 'SuivrePay'}
                         </div>
                     ),
                 },

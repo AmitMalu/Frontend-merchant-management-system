@@ -1,91 +1,59 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { MdSearch } from "react-icons/md";
 import { TopBar, ReceiptRow } from "./BBPSPage";
-import {
-  findUatTransactionByRefId,
-  findUatTransactionsByMobile,
-  COMPLAINT_DISPOSITIONS,
-  registerUatComplaint,
-} from "./bbpsServices";
-import { sendComplaintRegisteredSms } from "./smsService";
+import { COMPLAINT_DISPOSITIONS, fetchMyBbpsTransactions, registerComplaint } from "./bbpsServices";
 import { toast } from "react-toastify";
 
 const ComplaintRegistrationPage = () => {
   const navigate = useNavigate();
 
-  // ── Step 1: find the transaction the complaint is against ──────────────
-  const [findMode, setFindMode] = useState("REF_ID"); // REF_ID | MOBILE
-  const [refId, setRefId] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [mobileMatches, setMobileMatches] = useState(null);
-  const [selectedTxn, setSelectedTxn] = useState(null);
+  // ── Step 1: the payment the complaint is about (one of your own) ───────
+  const [recent, setRecent] = useState([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+  const [txnRefId, setTxnRefId] = useState("");
 
   // ── Step 2: complaint details ────────────────────────────────────────
-  const [complaintType, setComplaintType] = useState("Transaction");
   const [disposition, setDisposition] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [response, setResponse] = useState(null);
 
-  const resetTxn = () => {
-    setSelectedTxn(null);
-    setMobileMatches(null);
-    setResponse(null);
-  };
+  useEffect(() => {
+    fetchMyBbpsTransactions()
+      .then(setRecent)
+      .catch(() => setRecent([]))
+      .finally(() => setLoadingRecent(false));
+  }, []);
 
-  const handleFindByRefId = () => {
-    if (!refId.trim()) { toast.error("Enter a B-Connect Txn ID"); return; }
-    const match = findUatTransactionByRefId(refId);
-    if (!match) { toast.error("No transaction found for that ID"); return; }
-    setSelectedTxn(match);
-    setMobileMatches(null);
-  };
+  const selected = recent.find((t) => t.txnRefId === txnRefId.trim());
 
-  const handleFindByMobile = () => {
-    if (!/^\d{10}$/.test(mobile.trim())) { toast.error("Enter a valid 10-digit mobile number"); return; }
-    const matches = findUatTransactionsByMobile(mobile).filter((t) => {
-      if (!fromDate && !toDate) return true;
-      const txnDay = t.txnDate?.slice(0, 10);
-      if (fromDate && txnDay < fromDate) return false;
-      if (toDate && txnDay > toDate) return false;
-      return true;
-    });
-    if (matches.length === 0) { toast.error("No transactions found for that mobile number"); return; }
-    setMobileMatches(matches);
-    setSelectedTxn(null);
-  };
-
-  const handleSubmitComplaint = () => {
-    if (!selectedTxn) { toast.error("Find and select a transaction first"); return; }
+  const handleSubmitComplaint = async () => {
+    if (!txnRefId.trim()) { toast.error("Enter or pick the transaction"); return; }
     if (!disposition) { toast.error("Select a complaint disposition"); return; }
     if (!description.trim()) { toast.error("Enter a complaint description"); return; }
     if (description.trim().length > 255) { toast.error("Description cannot exceed 255 characters"); return; }
 
     setSubmitting(true);
-    // UAT ONLY — no live /billpay/extComplaints/register call yet.
-    const result = registerUatComplaint();
-    setResponse(result);
-    setSubmitting(false);
-    toast.success("Complaint registered successfully");
-
-    sendComplaintRegisteredSms({
-      txnRefId: selectedTxn.txnReferenceId,
-      complaintId: result.complaintId,
-    });
+    try {
+      const result = await registerComplaint({
+        txnRefId: txnRefId.trim(),
+        disposition,
+        description: description.trim(),
+      });
+      setResponse(result);
+      toast.success("Complaint registered successfully");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || "Could not register the complaint");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleNewComplaint = () => {
-    resetTxn();
-    setComplaintType("Transaction");
+    setResponse(null);
+    setTxnRefId("");
     setDisposition("");
     setDescription("");
-    setRefId("");
-    setMobile("");
-    setFromDate("");
-    setToDate("");
   };
 
   return (
@@ -103,13 +71,15 @@ const ComplaintRegistrationPage = () => {
                 <h3 className="text-xl font-bold text-gray-800">Your complaint is registered</h3>
               </div>
               <div className="border border-gray-100 rounded-xl px-4">
-                <ReceiptRow label="Complaint Type" value={complaintType} />
-                <ReceiptRow label="B-Connect Txn ID" value={selectedTxn?.txnReferenceId} mono />
-                <ReceiptRow label="Customer Name" value={selectedTxn?.respCustomerName} />
+                <ReceiptRow label="Complaint Type" value={response.complaintType} />
+                <ReceiptRow label="B-Connect Txn ID" value={response.txnRefId} mono />
                 <ReceiptRow label="Complaint ID" value={response.complaintId} mono bold />
                 <ReceiptRow label="Complaint Assigned To" value={response.complaintAssigned} />
-                <ReceiptRow label="Status" value={response.responseReason} />
+                <ReceiptRow label="Status" value={response.status} />
               </div>
+              <p className="text-xs text-gray-500 pt-3">
+                Keep the Complaint ID. You can check its status any time from Complaint Status.
+              </p>
               <div className="flex justify-end pt-4">
                 <button
                   onClick={handleNewComplaint}
@@ -121,178 +91,97 @@ const ComplaintRegistrationPage = () => {
             </div>
           ) : (
             <>
-              {/* Step 1: find transaction */}
+              {/* Step 1: the transaction */}
               <div className="bg-gray-50 p-4 rounded-lg space-y-4">
                 <label className="block text-sm font-medium text-gray-700">
-                  Identify Transaction <span className="text-red-500">*</span>
+                  B-Connect Txn ID <span className="text-red-500">*</span>
                 </label>
+                <input
+                  type="text"
+                  value={txnRefId}
+                  onChange={(e) => setTxnRefId(e.target.value)}
+                  placeholder="Transaction ID from your receipt"
+                  className="w-full max-w-md px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
 
-                <div className="flex flex-wrap gap-3">
-                  {[
-                    { value: "REF_ID", label: "B-Connect Txn ID" },
-                    { value: "MOBILE", label: "Mobile Number & Date Range" },
-                  ].map((opt) => (
-                    <label
-                      key={opt.value}
-                      className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm font-medium cursor-pointer transition-colors ${
-                        findMode === opt.value
-                          ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                          : "border-gray-300 bg-white text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="findMode"
-                        checked={findMode === opt.value}
-                        onChange={() => { setFindMode(opt.value); resetTxn(); }}
-                        className="accent-indigo-700"
-                      />
-                      {opt.label}
-                    </label>
-                  ))}
-                </div>
-
-                {findMode === "REF_ID" ? (
-                  <div className="flex flex-wrap items-end gap-3">
-                    <div className="min-w-[260px]">
-                      <input
-                        type="text"
-                        value={refId}
-                        onChange={(e) => setRefId(e.target.value)}
-                        placeholder="e.g. CC015323BAAG00032929"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <button
-                      onClick={handleFindByRefId}
-                      className="px-6 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors flex items-center gap-2"
-                    >
-                      <MdSearch /> Find
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-end gap-3">
-                    <div className="min-w-[160px]">
-                      <input
-                        type="tel"
-                        value={mobile}
-                        onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                        placeholder="10-digit mobile"
-                        maxLength={10}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <input
-                      type="date"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <input
-                      type="date"
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                      className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <button
-                      onClick={handleFindByMobile}
-                      className="px-6 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors flex items-center gap-2"
-                    >
-                      <MdSearch /> Find
-                    </button>
-                  </div>
-                )}
-
-                {/* Mobile search results — pick one */}
-                {mobileMatches && (
+                {/* Your latest payments — pick one */}
+                {loadingRecent ? (
+                  <p className="text-xs text-gray-400">Loading your recent payments…</p>
+                ) : recent.length > 0 && (
                   <div className="space-y-2">
-                    {mobileMatches.map((t) => (
-                      <button
-                        key={t.txnReferenceId}
-                        onClick={() => setSelectedTxn(t)}
-                        className={`w-full text-left px-4 py-2.5 border rounded-lg text-sm transition-colors ${
-                          selectedTxn?.txnReferenceId === t.txnReferenceId
-                            ? "border-indigo-600 bg-indigo-50"
-                            : "border-gray-300 bg-white hover:bg-gray-100"
-                        }`}
-                      >
-                        <span className="font-semibold text-gray-800">{t.billerName}</span>
-                        <span className="text-gray-500 ml-2 font-mono text-xs">{t.txnReferenceId}</span>
-                        <span className="text-gray-500 ml-2">₹{(Number(t.amount) / 100).toFixed(2)}</span>
-                      </button>
-                    ))}
+                    <p className="text-xs text-gray-500">Or pick one of your recent payments:</p>
+                    <div className="max-h-56 overflow-y-auto space-y-2">
+                      {recent.map((t) => (
+                        <button
+                          key={t.txnRefId}
+                          onClick={() => setTxnRefId(t.txnRefId)}
+                          className={`w-full text-left px-4 py-2.5 border rounded-lg text-sm transition-colors ${
+                            txnRefId.trim() === t.txnRefId
+                              ? "border-indigo-600 bg-indigo-50"
+                              : "border-gray-300 bg-white hover:bg-gray-100"
+                          }`}
+                        >
+                          <span className="font-semibold text-gray-800">{t.billerName || t.category || "Bill payment"}</span>
+                          <span className="text-gray-500 ml-2 font-mono text-xs">{t.txnRefId}</span>
+                          <span className="text-gray-500 ml-2">₹{Number(t.amount).toFixed(2)}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {/* Selected transaction summary */}
-                {selectedTxn && (
+                {selected && (
                   <div className="border border-indigo-100 bg-indigo-50 rounded-lg px-4 py-3 text-sm text-indigo-800">
-                    Selected: <span className="font-semibold">{selectedTxn.billerName}</span>{" "}
-                    (<span className="font-mono">{selectedTxn.txnReferenceId}</span>) — ₹{(Number(selectedTxn.amount) / 100).toFixed(2)}
+                    Selected: <span className="font-semibold">{selected.billerName || selected.category}</span>{" "}
+                    (<span className="font-mono">{selected.txnRefId}</span>) — ₹{Number(selected.amount).toFixed(2)}
                   </div>
                 )}
               </div>
 
               {/* Step 2: complaint details */}
-              {selectedTxn && (
-                <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Type of Complaint <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={complaintType}
-                        onChange={(e) => setComplaintType(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="Transaction">Transaction</option>
-                        <option value="Service">Service</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Complaint Disposition <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={disposition}
-                        onChange={(e) => setDisposition(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="">Select disposition</option>
-                        {COMPLAINT_DISPOSITIONS.map((d) => (
-                          <option key={d} value={d}>{d}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Complaint Description <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={3}
-                      maxLength={255}
-                      placeholder="Describe the issue (max 255 characters)"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">{description.length}/255</p>
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <button
-                      onClick={handleSubmitComplaint}
-                      disabled={submitting}
-                      className="px-7 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors disabled:opacity-50 uppercase tracking-wide"
-                    >
-                      Submit Complaint
-                    </button>
-                  </div>
+              <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Complaint Disposition <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={disposition}
+                    onChange={(e) => setDisposition(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select disposition</option>
+                    {COMPLAINT_DISPOSITIONS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Complaint Description <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    maxLength={255}
+                    placeholder="Describe the issue (max 255 characters)"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">{description.length}/255</p>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={handleSubmitComplaint}
+                    disabled={submitting}
+                    className="px-7 py-2.5 bg-indigo-700 text-white text-sm font-bold rounded-full hover:bg-indigo-800 transition-colors disabled:opacity-50 uppercase tracking-wide flex items-center gap-2"
+                  >
+                    {submitting && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />}
+                    Submit Complaint
+                  </button>
+                </div>
+              </div>
             </>
           )}
         </div>
