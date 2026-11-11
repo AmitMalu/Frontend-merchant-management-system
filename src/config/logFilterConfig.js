@@ -12,6 +12,16 @@ export const tableOptions = [
     { value: 'credit-card', label: 'CCBP Logs (Credit Card Bill Payment)' },
 ];
 
+// Extra "Vendor" dropdown for tables that hold calls to more than one vendor.
+// The value is sent as ?vendor=..., "all" sends nothing (both vendors).
+export const vendorOptions = {
+    'credit-card': [
+        { value: 'all', label: 'All Vendors' },
+        { value: 'BILLAVENUE', label: 'Bill Avenue' },
+        { value: 'SUIVREPAY', label: 'SuivrePay' },
+    ],
+};
+
 export const filterOptions = {
     requests: [
         { value: 'all', label: 'All Requests', endpoint: '/admin-logs/requests' },
@@ -72,8 +82,6 @@ export const filterOptions = {
         { value: 'raise-complaint', label: 'Raise Complaint', endpoint: '/admin-logs/credit-card/action/RAISE_COMPLAINT' },
         { value: 'complaint-status', label: 'Complaint Status', endpoint: '/admin-logs/credit-card/action/COMPLAINT_STATUS' },
         { value: 'txn-status', label: 'Transaction Status (Bill Avenue)', endpoint: '/admin-logs/credit-card/action/TXN_STATUS' },
-        { value: 'vendor-billavenue', label: 'Bill Avenue Only', endpoint: '/admin-logs/credit-card/vendor/BILLAVENUE' },
-        { value: 'vendor-suivrepay', label: 'SuivrePay Only', endpoint: '/admin-logs/credit-card/vendor/SUIVREPAY' },
         { value: 'success', label: 'Success Only', endpoint: '/admin-logs/credit-card', status: 'SUCCESS' },
         { value: 'refused', label: 'Refused / Errors', endpoint: '/admin-logs/credit-card', status: 'REFUSED' },
         { value: 'no-response', label: 'No Response (Timeout)', endpoint: '/admin-logs/credit-card', status: 'NO_RESPONSE' },

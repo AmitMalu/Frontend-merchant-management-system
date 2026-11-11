@@ -99,6 +99,7 @@ const SUPER_ADMIN_PERMISSIONS = new Set([
   'Payment', 'Payment Products', 'Payment Charges', 'Payment Vendors', 'Payment Vendors Credentials', 'Payment Vendor Routing',
   'Other', 'File Upload', 'Charge Calculation', 'Batch Status', 'Prefund Authorization', 'Merchant Settings', 'Update Transaction', 'Notification URL',
   'Transaction Monitoring',
+  'Support Tickets',
   'Reports'
 ]);
 
@@ -340,6 +341,14 @@ const ADMIN_MENU_CONFIG = (userType) => [
       { title: 'Dashboard', path: '/dashboard/monitoring', icon: ShieldAlert, permission: 'Transaction Monitoring' },
       { title: 'Rules', path: '/dashboard/monitoring/rules', icon: AlertTriangle, permission: 'Transaction Monitoring' }
     ]
+  },
+  {
+    title: 'Support Tickets',
+    path: '/dashboard/support-ticket',
+    key: 'support-tickets',
+    icon: Ticket,
+    iconColor: '',
+    permission: 'Support Tickets'
   },
   {
     title: 'Reports',

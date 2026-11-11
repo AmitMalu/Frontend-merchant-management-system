@@ -17,6 +17,7 @@ const PermissionsManagement = () => {
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
     const [expandedModules, setExpandedModules] = useState(new Set());
+    const [syncing, setSyncing] = useState(false);
 
     useEffect(() => {
         fetchPermissions();
@@ -32,6 +33,25 @@ const PermissionsManagement = () => {
             toast.error("Failed to load permissions");
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Adds every sidebar module / menu permission that is missing from the list (never changes or removes any).
+    const handleAddMissingModules = async () => {
+        setSyncing(true);
+        try {
+            const response = await api.post("/admin/permissions/sync-defaults");
+            const added = response.data?.added || [];
+            if (added.length === 0) {
+                toast.info("All modules are already in the list");
+            } else {
+                toast.success(`Added ${added.length} missing: ${added.join(", ")}`, { autoClose: 8000 });
+                await fetchPermissions();
+            }
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Could not add the missing modules");
+        } finally {
+            setSyncing(false);
         }
     };
 
@@ -254,13 +274,24 @@ const PermissionsManagement = () => {
                     />
                 </div>
 
-                <button
-                    onClick={() => setShowCreateForm(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span>Create Permission</span>
-                </button>
+                <div className="flex items-center space-x-3">
+                    <button
+                        onClick={handleAddMissingModules}
+                        disabled={syncing}
+                        title="Adds any menu module that has no permission yet. Existing permissions are not changed."
+                        className="flex items-center space-x-2 px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 disabled:opacity-50 transition-colors"
+                    >
+                        <Shield className="w-4 h-4" />
+                        <span>{syncing ? 'Adding...' : 'Add Missing Modules'}</span>
+                    </button>
+                    <button
+                        onClick={() => setShowCreateForm(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Create Permission</span>
+                    </button>
+                </div>
             </div>
 
             {/* Quick Setup */}

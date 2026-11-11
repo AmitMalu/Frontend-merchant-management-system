@@ -13,7 +13,7 @@ import LogFilters from '../BackendLogs/LogFilters';
 import LogDetailModal from '../BackendLogs/LogDetailModal';
 
 // Import configurations
-import { tableOptions, filterOptions } from '../../config/logFilterConfig';
+import { tableOptions, filterOptions, vendorOptions } from '../../config/logFilterConfig';
 import { getLogColumns } from '../../config/logColumns';
 
 const BusinessLogs = () => {
@@ -21,6 +21,7 @@ const BusinessLogs = () => {
     const [loading, setLoading] = useState(false);
     const [selectedTable, setSelectedTable] = useState(null);
     const [selectedFilter, setSelectedFilter] = useState(null);
+    const [selectedVendor, setSelectedVendor] = useState(null);
     const [activeTableType, setActiveTableType] = useState(null);
     const [selectedLog, setSelectedLog] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +68,12 @@ const BusinessLogs = () => {
             // ADD STATUS PARAM (VERY IMPORTANT)
             if (selectedFilter.status) {
                 url += `&status=${selectedFilter.status}`;
+            }
+
+            // Vendor dropdown (credit card logs): Bill Avenue, SuivrePay, or both
+            const vendorChoice = selectedVendor?.value;
+            if (vendorOptions[selectedTable?.value] && vendorChoice && vendorChoice !== 'all') {
+                url += `&vendor=${vendorChoice}`;
             }
 
             // Add date range if both dates are provided - send as YYYY-MM-DD format only
@@ -117,6 +124,7 @@ const BusinessLogs = () => {
     const handleTableChange = (option) => {
         setSelectedTable(option);
         setSelectedFilter(null);
+        setSelectedVendor(null);
         setLogs([]);
         setDateRange({ start: '', end: '' });
         setCurrentPage(0);
@@ -147,6 +155,9 @@ const BusinessLogs = () => {
                     loading={loading}
                     tableOptions={tableOptions}
                     filterOptions={filterOptions}
+                    vendorOptions={vendorOptions}
+                    selectedVendor={selectedVendor}
+                    onVendorChange={setSelectedVendor}
                 />
 
                 {logs.length > 0 && (
@@ -155,6 +166,8 @@ const BusinessLogs = () => {
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-semibold text-gray-900">
                                     {selectedFilter?.label}
+                                    {vendorOptions[activeTableType] && selectedVendor && selectedVendor.value !== 'all'
+                                        ? ` - ${selectedVendor.label}` : ''}
                                 </h3>
                                 <div className="text-sm text-gray-600">
                                     Showing {logs.length} records (Page {currentPage + 1} of {totalPages || 1})

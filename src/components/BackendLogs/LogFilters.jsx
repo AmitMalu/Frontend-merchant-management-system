@@ -11,11 +11,15 @@ const LogFilters = ({
     onFetch,
     loading,
     tableOptions,
-    filterOptions
+    filterOptions,
+    vendorOptions = {},
+    selectedVendor,
+    onVendorChange
 }) => {
+    const vendorChoices = selectedTable ? vendorOptions[selectedTable.value] : null;
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className={`grid grid-cols-1 md:grid-cols-2 ${vendorChoices ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4 mb-4`}>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Select Log Table
@@ -44,6 +48,20 @@ const LogFilters = ({
                         isClearable
                     />
                 </div>
+
+                {vendorChoices && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Vendor
+                        </label>
+                        <Select
+                            value={selectedVendor || vendorChoices[0]}
+                            onChange={(option) => onVendorChange(option || vendorChoices[0])}
+                            options={vendorChoices}
+                            className="text-sm"
+                        />
+                    </div>
+                )}
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

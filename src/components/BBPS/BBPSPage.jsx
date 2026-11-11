@@ -110,7 +110,7 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, onC
     setQuoteLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const q = await fetchPaymentQuote(value);
+        const q = await fetchPaymentQuote(value, billerInfo?.billerId);
         if (!cancelled) { setQuote(q); setQuoteError(""); }
       } catch (e) {
         if (!cancelled) {

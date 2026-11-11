@@ -148,8 +148,8 @@ export const payBill = async ({
  * What this payment would take from your wallet: bill amount + service charge.
  * POST /billpay/config/payment-quote  →  { data: { amount, custConvFee, charges, totalDebit } } (rupees)
  */
-export const fetchPaymentQuote = async (amount) => {
-  const res = await api.post("/billpay/config/payment-quote", { amount, custConvFee: "0" });
+export const fetchPaymentQuote = async (amount, billerId) => {
+  const res = await api.post("/billpay/config/payment-quote", { amount, custConvFee: "0", billerId });
   return res.data?.data;
 };
 
