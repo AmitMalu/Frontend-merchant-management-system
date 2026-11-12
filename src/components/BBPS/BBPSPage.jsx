@@ -87,6 +87,12 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, onC
   const [panError, setPanError]     = useState("");
   const needsPan = Number(amount) >= 50000;
 
+  // The payer's name is mandatory for every payment (Bill Avenue "Remitter Name").
+  // Pre-filled from the name on the bill when there is one; the merchant can change it.
+  const nameOnBill = (billResult?.billerResponse?.customerName || "").trim();
+  const [remitterName, setRemitterName] = useState(/^na$/i.test(nameOnBill) ? "" : nameOnBill);
+  const [nameError, setNameError]       = useState("");
+
   const billerResp     = billResult?.billerResponse   || {};
   const inputEcho      = billResult?.inputParams?.input || [];
   const additionalInfo = billResult?.additionalInfo?.info || [];
@@ -155,6 +161,12 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, onC
     if (err) { setAmountError(err); return; }
     setAmountError("");
 
+    if (!/^[A-Za-z][A-Za-z .'-]{1,49}$/.test(remitterName.trim())) {
+      setNameError("Enter the payer's name (letters only)");
+      return;
+    }
+    setNameError("");
+
     if (needsPan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.trim().toUpperCase())) {
       setPanError("Enter the customer's PAN (for example ABCDE1234F)");
       return;
@@ -177,6 +189,7 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, onC
         requestId: isQuickPay ? undefined : billResult?.fetchRequestId,
         billerId: billerInfo?.billerId,
         customerMobile,
+        remitterName: remitterName.trim(),
         customerPan: needsPan ? pan.trim().toUpperCase() : undefined,
         inputParams: inputEcho,
         billerResponse: billResult?.billerResponse,
@@ -365,6 +378,22 @@ const BillDetailsModal = ({ billResult, service, billerInfo, customerMobile, onC
                   />
                   {amountError && <p className="text-red-500 text-[10px] mt-1">{amountError}</p>}
                 </div>
+              </div>
+
+              {/* Payer name: Bill Avenue needs it for every payment */}
+              <div className="relative border border-gray-300 rounded-lg px-3 pt-4 pb-2 bg-white">
+                <span className="absolute top-1 left-3 text-[10px] text-gray-500 font-medium">
+                  Payer name (person paying the cash)
+                </span>
+                <input
+                  type="text"
+                  value={remitterName}
+                  maxLength={50}
+                  onChange={(e) => { setRemitterName(e.target.value); setNameError(""); }}
+                  placeholder="Full name"
+                  className="w-full text-sm text-gray-800 bg-transparent focus:outline-none mt-0.5"
+                />
+                {nameError && <p className="text-red-500 text-[10px] mt-1">{nameError}</p>}
               </div>
 
               {/* PAN: needed for cash payments of Rs.50,000 or more */}

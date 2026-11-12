@@ -109,6 +109,7 @@ export const payBill = async ({
   billerId,
   customerMobile,
   customerPan,
+  remitterName,
   inputParams,
   billerResponse,
   additionalInfo,
@@ -123,7 +124,11 @@ export const payBill = async ({
     requestId,
     billerId,
     billerAdhoc,
-    customerInfo: { customerMobile, ...(customerPan ? { customerPan } : {}) },
+    customerInfo: {
+      customerMobile,
+      REMITTER_NAME: remitterName,
+      ...(customerPan ? { customerPan } : {}),
+    },
     inputParams: { input: inputParams || [] },
     billerResponse,
     // Echoed back exactly as the bill fetch returned it; Bill Avenue compares it ("additionalInfo value mismatch").
