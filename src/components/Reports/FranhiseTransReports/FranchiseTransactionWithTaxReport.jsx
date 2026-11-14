@@ -1,10 +1,15 @@
 // FranchiseTransactionWithTaxReport.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
 import { FileText, TrendingUp, DollarSign, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../../constants/API/axiosInstance';
+import { useStableFields, useLatestRequest, exportErrorMessage } from '../reportTableUtils';
 import UniversalExportButtons from '../UniversalExportButtons';
 import FTransReportFilters from './FTransReportFilters';
+
+// Money columns that are always shown, even on a page where every row is empty in them
+const ALWAYS_SHOW_COLUMNS = ['customTxnId', 'txnId', 'txnDate', 'service', 'txnAmount', 'settleAmount', 'systemFee', 'systemFeeExGST',
+    'gstAmount', 'commissionAmount', 'tdsAmount', 'netCommissionAmount', 'merchantName', 'state'];
 
 const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise }) => {
     const [transactions, setTransactions] = useState([]);
@@ -25,6 +30,7 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
     });
 
     const fetchTransactions = async (page = 0) => {
+        const requestNo = latest.begin();
         setLoading(true);
         try {
             const params = {
@@ -70,6 +76,9 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
                     },
                 });
 
+                if (!latest.isLatest(requestNo)) {
+                    return;
+                }
                 if (response.data.success) {
                     setTransactions(response.data.data.transactions);
                     setSummary(response.data.data.summary);
@@ -89,25 +98,18 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
             }
         } catch (error) {
             console.error('Error fetching transactions:', error);
-            alert('Error fetching transaction data');
+            alert(await exportErrorMessage(error, 'Error fetching transaction data'));
         } finally {
-            setLoading(false);
+            if (latest.isLatest(requestNo)) {
+                setLoading(false);
+            }
         }
     };
 
-    const availableFields = useMemo(() => {
-        if (transactions.length === 0) return new Set();
-
-        const fields = new Set();
-        transactions.forEach(txn => {
-            Object.keys(txn).forEach(key => {
-                if (txn[key] !== null && txn[key] !== undefined && txn[key] !== '') {
-                    fields.add(key);
-                }
-            });
-        });
-        return fields;
-    }, [transactions]);
+    // Columns stay the same while paging (see reportTableUtils)
+    const { availableFields, resetFields } = useStableFields(transactions, ALWAYS_SHOW_COLUMNS);
+    const latest = useLatestRequest();
+    const tableScrollRef = useRef(null);
 
     const columnDefinitions = useMemo(() => {
         const columnHelper = createColumnHelper();
@@ -252,6 +254,7 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
     });
 
     const resetReportState = () => {
+        resetFields();
         setTransactions([]);
         setSummary(null);
         setReportInfo(null);
@@ -271,8 +274,9 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
     };
 
 
-    const handlePageChange = (newPage) => {
-        fetchTransactions(newPage);
+    const handlePageChange = async (newPage) => {
+        await fetchTransactions(newPage);
+        tableScrollRef.current?.scrollTo({ top: 0 });
     };
 
     const exportConfig = useMemo(() => {
@@ -426,7 +430,7 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
                     onChange={handleFiltersChange}
                     isFranchise={isFranchise}
                     reportType="transactions"
-                    onGenerate={() => fetchTransactions(0)}
+                    onGenerate={() => { resetFields(); fetchTransactions(0); }}
                 />
             </div>
 
@@ -535,7 +539,11 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
                         />
                     </div>
 
-                    <div className="overflow-x-auto" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                    <div
+                        ref={tableScrollRef}
+                        className="overflow-x-auto"
+                        style={{ maxHeight: '70vh', overflowY: 'auto', opacity: loading ? 0.55 : 1, transition: 'opacity 150ms' }}
+                    >
                         <table className="w-full min-w-max">
                             <thead className="bg-gray-50 sticky top-0">
                                 {table.getHeaderGroups().map(headerGroup => (
@@ -573,7 +581,7 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
                         <div className="flex gap-2">
                             <button
                                 onClick={() => handlePageChange(pagination.currentPage - 1)}
-                                disabled={!pagination.hasPrevious}
+                                disabled={!pagination.hasPrevious || loading}
                                 className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                             >
                                 <ChevronLeft className="w-4 h-4" />
@@ -581,7 +589,7 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
                             </button>
                             <button
                                 onClick={() => handlePageChange(pagination.currentPage + 1)}
-                                disabled={!pagination.hasNext}
+                                disabled={!pagination.hasNext || loading}
                                 className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                             >
                                 Next
@@ -591,7 +599,7 @@ const FranchiseTransactionWithTaxReport = ({ filters: commonFilters, isFranchise
                     </div>
                 </div>
             )}{/* Loading State */}
-            {loading && (
+            {loading && transactions.length === 0 && (
                 <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
                     <p className="text-sm text-gray-600">Loading transactions...</p>

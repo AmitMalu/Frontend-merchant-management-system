@@ -21,8 +21,28 @@ import {
     ChevronsRight,
     ArrowUpDown
 } from 'lucide-react';
+import Select from 'react-select';
 import UniversalExportButtons from './UniversalExportButtons';
 import api from '../../constants/API/axiosInstance';
+
+// A searchable dropdown for one of the id filters. The report still gets the id; the user picks a
+// name from the list, so a wrong id can no longer be typed.
+const IdSelect = ({ label, name, options, value, onChange, placeholder }) => (
+    <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+        <Select
+            inputId={name}
+            options={options}
+            value={options.find((o) => String(o.value) === String(value)) || null}
+            onChange={(option) => onChange(name, option ? String(option.value) : '')}
+            placeholder={placeholder}
+            isClearable
+            isSearchable
+            noOptionsMessage={() => 'Nothing found'}
+            className="text-sm"
+        />
+    </div>
+);
 
 const StockReport = () => {
     const [data, setData] = useState([]);
@@ -39,9 +59,49 @@ const StockReport = () => {
     const [globalFilter, setGlobalFilter] = useState('');
     const [sorting, setSorting] = useState([]);
 
+    // the lists behind the Product / Merchant / Franchise dropdowns
+    const [productOptions, setProductOptions] = useState([]);
+    const [merchantOptions, setMerchantOptions] = useState([]);
+    const [franchiseOptions, setFranchiseOptions] = useState([]);
+
     useEffect(() => {
         fetchStockReport();
+        loadFilterOptions();
     }, []);
+
+    const byLabel = (a, b) => a.label.localeCompare(b.label);
+
+    const loadFilterOptions = async () => {
+        const [products, merchants, franchises] = await Promise.allSettled([
+            api.get('/products?page=0&size=1000&sortBy=productName&sortDir=asc'),
+            api.get('/merchants'),
+            api.get('/franchise'),
+        ]);
+
+        if (products.status === 'fulfilled') {
+            const list = products.value.data?.content || products.value.data || [];
+            setProductOptions(list
+                .map((p) => ({
+                    value: p.id,
+                    label: p.productCode ? `${p.productName} (${p.productCode})` : p.productName,
+                }))
+                .sort(byLabel));
+        }
+        if (merchants.status === 'fulfilled') {
+            setMerchantOptions((merchants.value.data || [])
+                .map((m) => ({ value: m.id, label: m.businessName || `Merchant #${m.id}` }))
+                .sort(byLabel));
+        }
+        if (franchises.status === 'fulfilled') {
+            setFranchiseOptions((franchises.value.data || [])
+                .map((f) => ({ value: f.id, label: f.franchiseName || `Franchise #${f.id}` }))
+                .sort(byLabel));
+        }
+        const failed = [products, merchants, franchises].filter((r) => r.status === 'rejected').length;
+        if (failed > 0) {
+            console.error('Some filter lists could not be loaded for the stock report');
+        }
+    };
 
     const fetchStockReport = async () => {
         setLoading(true);
@@ -191,6 +251,10 @@ const StockReport = () => {
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (name, value) => {
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
@@ -397,47 +461,32 @@ const StockReport = () => {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Product ID
-                            </label>
-                            <input
-                                type="number"
-                                name="productId"
-                                value={filters.productId}
-                                onChange={handleFilterChange}
-                                placeholder="Enter product ID"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                            />
-                        </div>
+                        <IdSelect
+                            label="Product"
+                            name="productId"
+                            options={productOptions}
+                            value={filters.productId}
+                            onChange={handleSelectChange}
+                            placeholder="All products"
+                        />
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Merchant ID
-                            </label>
-                            <input
-                                type="number"
-                                name="merchantId"
-                                value={filters.merchantId}
-                                onChange={handleFilterChange}
-                                placeholder="Enter merchant ID"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                            />
-                        </div>
+                        <IdSelect
+                            label="Merchant"
+                            name="merchantId"
+                            options={merchantOptions}
+                            value={filters.merchantId}
+                            onChange={handleSelectChange}
+                            placeholder="All merchants"
+                        />
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Franchise ID
-                            </label>
-                            <input
-                                type="number"
-                                name="franchiseId"
-                                value={filters.franchiseId}
-                                onChange={handleFilterChange}
-                                placeholder="Enter franchise ID"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                            />
-                        </div>
+                        <IdSelect
+                            label="Franchise"
+                            name="franchiseId"
+                            options={franchiseOptions}
+                            value={filters.franchiseId}
+                            onChange={handleSelectChange}
+                            placeholder="All franchises"
+                        />
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">

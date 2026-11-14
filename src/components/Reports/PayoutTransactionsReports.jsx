@@ -26,6 +26,10 @@ const PayoutTransactionsReport = () => {
   const userType = localStorage.getItem('userType')?.toLowerCase();
   const isMerchant = userType === 'merchant';
   const merchantId = localStorage.getItem('customerId');
+  const isAdmin = ["admin", "super_admin"].includes(userType);
+
+  // the vendors that have payouts (admin's Vendor filter)
+  const [vendors, setVendors] = useState([]);
 
   /* ===================== DEFAULT FILTER ===================== */
 
@@ -37,7 +41,8 @@ const PayoutTransactionsReport = () => {
     return {
       startDate: past.toISOString().split("T")[0],
       endDate: today.toISOString().split("T")[0],
-      service: "BOTH"
+      service: "BOTH",
+      vendorId: "ALL"
     };
   };
 
@@ -58,6 +63,9 @@ const PayoutTransactionsReport = () => {
       // Always send merchantId when logged in as merchant
       if (isMerchant && merchantId) {
         params.append("merchantId", merchantId);
+      }
+      if (isAdmin && filters.vendorId && filters.vendorId !== "ALL") {
+        params.append("vendorId", filters.vendorId);
       }
 
       params.append("page", page);
@@ -82,6 +90,13 @@ const PayoutTransactionsReport = () => {
   useEffect(() => {
     fetchPayoutTransactions();
   }, [page, size]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get("/payment-payout/transactions/report/vendors")
+      .then((res) => setVendors(res.data || []))
+      .catch((err) => console.error("Could not load the payout vendors", err));
+  }, [isAdmin]);
 
   /* ===================== COLUMNS ===================== */
 
@@ -109,6 +124,11 @@ const PayoutTransactionsReport = () => {
     },
     { accessorKey: "transactionType", header: "Transaction Type" },
     { accessorKey: "tranStatus", header: "Transaction Status" },
+    ...(isAdmin ? [{
+      accessorKey: "vendorName",
+      header: "Vendor",
+      cell: ({ getValue }) => getValue() ?? "-"
+    }] : []),
     ...(!isMerchant ? [
       {
         accessorKey: "merchantId",
@@ -121,7 +141,7 @@ const PayoutTransactionsReport = () => {
         cell: ({ getValue }) => getValue() ?? "-"
       }
     ] : [])
-  ], [isMerchant]);
+  ], [isMerchant, isAdmin]);
 
   /* ===================== TABLE ===================== */
 
@@ -176,6 +196,9 @@ const PayoutTransactionsReport = () => {
     if (isMerchant && merchantId) {
       params.append("merchantId", merchantId);
     }
+    if (isAdmin && filters.vendorId && filters.vendorId !== "ALL") {
+      params.append("vendorId", filters.vendorId);
+    }
     params.append("page", 0);
     params.append("size", totalRecords > 0 ? totalRecords : 10000);
 
@@ -197,6 +220,7 @@ const PayoutTransactionsReport = () => {
       BankRefId:         d.bankRefId ?? "-",
       TransactionType:   d.transactionType,
       TransactionStatus: d.tranStatus,
+      ...(isAdmin && { Vendor: d.vendorName ?? "-" }),
       // Only include for admin — merchant already knows their own ID
       ...(!isMerchant && {
         MerchantId:  d.merchantId,
@@ -253,8 +277,24 @@ const PayoutTransactionsReport = () => {
             <option value="BOTH">All</option>
             <option value="PAYOUT">Payout</option>
             <option value="PAYOUT_REFUND">Refund</option>
+            <option value="PENDING">Pending</option>
             <option value="FAILED">Failed</option>
           </select>
+
+          {/* Admin: one payout vendor, or all */}
+          {isAdmin && (
+            <select
+              name="vendorId"
+              value={filters.vendorId}
+              onChange={handleChange}
+              className="px-4 py-2 border rounded-lg w-full"
+            >
+              <option value="ALL">All Vendors</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* BUTTON ROW */}

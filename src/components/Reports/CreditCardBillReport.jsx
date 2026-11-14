@@ -28,6 +28,8 @@ const getDefaultFilters = () => {
     endDate: toDateInput(today),
     status: "ALL",
     search: "",
+    // admin: ALL | BILLAVENUE | SUIVREPAY
+    vendor: "ALL",
     // admin: which kind of account (and which one)
     accountType: "ALL",
     accountId: "",
@@ -46,6 +48,8 @@ const STATUS_STYLE = {
   PENDING: "bg-amber-100 text-amber-700",
   FAILED: "bg-red-100 text-red-700"
 };
+
+const VENDOR_LABEL = { BILLAVENUE: "Bill Avenue", SUIVREPAY: "SuivrePay" };
 
 const SUMMARY_CONFIG = [
   { key: "totalCount", label: "Total Payments" },
@@ -131,6 +135,7 @@ const CreditCardBillReport = () => {
     if (f.endDate) params.append("endDate", f.endDate);
     if (f.status && f.status !== "ALL") params.append("status", f.status);
     if (f.search && f.search.trim()) params.append("search", f.search.trim());
+    if (isAdmin && f.vendor && f.vendor !== "ALL") params.append("vendor", f.vendor);
 
     // Whose payments: the server already limits every role to its own scope,
     // these only narrow it down further.
@@ -214,6 +219,11 @@ const CreditCardBillReport = () => {
       accessorKey: "franchiseName",
       header: "Under Franchise",
       cell: ({ getValue }) => getValue() ?? "-"
+    }] : []),
+    ...(isAdmin ? [{
+      accessorKey: "vendor",
+      header: "Vendor",
+      cell: ({ getValue }) => VENDOR_LABEL[getValue()] ?? getValue() ?? "-"
     }] : []),
     { accessorKey: "billerName", header: "Biller", cell: ({ getValue }) => getValue() ?? "-" },
     {
@@ -332,6 +342,7 @@ const CreditCardBillReport = () => {
         AccountName: d.customerName
       }),
       ...(isAdmin && { UnderFranchise: d.franchiseName ?? "" }),
+      ...(isAdmin && { Vendor: VENDOR_LABEL[d.vendor] ?? d.vendor ?? "" }),
       Biller: d.billerName,
       CardLast4: d.cardLast4,
       CardHolder: d.cardHolder,
@@ -423,6 +434,18 @@ const CreditCardBillReport = () => {
               <option value="FAILED">Failed</option>
             </select>
           </div>
+
+          {/* Admin: one vendor (Bill Avenue or SuivrePay) or both */}
+          {isAdmin && (
+            <div>
+              <label className={labelClass}>Vendor</label>
+              <select name="vendor" value={filters.vendor} onChange={handleChange} className={inputClass}>
+                <option value="ALL">All Vendors</option>
+                <option value="BILLAVENUE">Bill Avenue</option>
+                <option value="SUIVREPAY">SuivrePay</option>
+              </select>
+            </div>
+          )}
 
           {/* Franchise: whose payments to look at (starts on its own) */}
           {isFranchise && (

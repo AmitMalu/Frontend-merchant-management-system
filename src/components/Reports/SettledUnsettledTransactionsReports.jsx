@@ -32,6 +32,13 @@ const SettledUnsettledTransactionsReports = () => {
   const merchantId = localStorage.getItem("customerId");
 
   /*
+   * The choices of the Acquiring Bank and Machine Model filters (admin).
+   * They come from the data, so a new bank or model shows up by itself.
+   */
+  const [bankOptions, setBankOptions] = useState([]);
+  const [modelOptions, setModelOptions] = useState([]);
+
+  /*
    * Convert Date object to yyyy-MM-dd using local date.
    *
    * Do not use toISOString() here because it can change the date
@@ -81,7 +88,9 @@ const SettledUnsettledTransactionsReports = () => {
       fromDate: formatDateForInput(pastDate),
       toDate: formatDateForInput(today),
       settlementStatus: "",
-      dateType: "TRANSACTION_DATE"
+      dateType: "TRANSACTION_DATE",
+      acquiringBank: "",
+      model: ""
     };
   };
 
@@ -214,6 +223,17 @@ const SettledUnsettledTransactionsReports = () => {
           "settled",
           selectedFilters.settlementStatus
         );
+      }
+
+      /*
+       * Acquiring bank (HDFC, AXIS ...) and machine model (admin)
+       */
+      if (!isMerchant && selectedFilters.acquiringBank) {
+        params.append("acquiringBank", selectedFilters.acquiringBank);
+      }
+
+      if (!isMerchant && selectedFilters.model) {
+        params.append("model", selectedFilters.model);
       }
 
       /*
@@ -351,6 +371,20 @@ const SettledUnsettledTransactionsReports = () => {
         header: "Merchant",
         cell: ({ getValue }) => getValue() || "-"
       },
+      ...(!isMerchant
+        ? [
+            {
+              accessorKey: "acquiringBank",
+              header: "Bank",
+              cell: ({ getValue }) => getValue() || "-"
+            },
+            {
+              accessorKey: "model",
+              header: "Machine Model",
+              cell: ({ getValue }) => getValue() || "-"
+            }
+          ]
+        : []),
       {
         accessorKey: "mid",
         header: "MID",
@@ -397,7 +431,7 @@ const SettledUnsettledTransactionsReports = () => {
             : "-"
       }
     ],
-    []
+    [isMerchant]
   );
 
   /*
@@ -442,6 +476,18 @@ const SettledUnsettledTransactionsReports = () => {
 
     setFilters(initialFilters);
     fetchReports(initialFilters);
+
+    if (!isMerchant) {
+      api
+        .get("/stats/settled-unsettled-reports/filter-options")
+        .then(response => {
+          setBankOptions(response.data?.acquiringBanks || []);
+          setModelOptions(response.data?.models || []);
+        })
+        .catch(error =>
+          console.error("Could not load the bank / model choices:", error)
+        );
+    }
   }, []);
 
   /*
@@ -483,6 +529,10 @@ const SettledUnsettledTransactionsReports = () => {
       CardType: transaction.cardType,
       TransactionType: transaction.cardTxnType,
       Merchant: transaction.merchant,
+      ...(!isMerchant && {
+        Bank: transaction.acquiringBank,
+        MachineModel: transaction.model
+      }),
       MID: transaction.mid,
       TID: transaction.tid,
       Mobile: transaction.mobile,
@@ -591,6 +641,53 @@ const SettledUnsettledTransactionsReports = () => {
                 </option>
               </select>
             </div>
+          )}
+
+          {/* Acquiring bank and machine model (admin) */}
+          {!isMerchant && (
+            <>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bank
+                </label>
+
+                <select
+                  name="acquiringBank"
+                  value={filters.acquiringBank}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                >
+                  <option value="">All Banks</option>
+
+                  {bankOptions.map(bank => (
+                    <option key={bank} value={bank}>
+                      {bank}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Machine Model
+                </label>
+
+                <select
+                  name="model"
+                  value={filters.model}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                >
+                  <option value="">All Models</option>
+
+                  {modelOptions.map(model => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
 
           {/* From Date */}
