@@ -247,6 +247,11 @@ const TransferCell = ({ bank, onTransfer }) => {
             toast.error('Please enter a valid amount');
             return;
         }
+        // The payout vendor refuses anything under Rs 100 or above Rs 99,999 (the server checks this too).
+        if (parseFloat(amount) < 100 || parseFloat(amount) > 99999) {
+            toast.error('Payout amount must be between ₹100 and ₹99,999');
+            return;
+        }
         onTransfer(bank.id, parseFloat(amount), transferType);
         setAmount('');
         setIsExpanded(false);
@@ -278,7 +283,8 @@ const TransferCell = ({ bank, onTransfer }) => {
                 type="number"
                 placeholder="Amount"
                 value={amount}
-                min='0'
+                min='100'
+                max='99999'
                 onChange={(e) => setAmount(e.target.value)}
                 className=" p-1 border border-gray-300 rounded text-sm"
             />

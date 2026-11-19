@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UtsabPay - Payment Vendor Routing: Complete Guide</title>
+<style>
+  :root { --ink:#1f2937; --mute:#6b7280; --line:#e5e7eb; --blue:#2563eb; --bg:#ffffff; --soft:#f3f6fd; --warn:#fff7e6; --warnline:#f5c26b; --ok:#ecfdf3; --okline:#86d9a6; --bad:#fef2f2; --badline:#f4a3a3; }
+  * { box-sizing:border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color:var(--ink); background:var(--bg); margin:0; line-height:1.6; font-size:15px; }
+  .wrap { max-width:960px; margin:0 auto; padding:32px 20px 80px; }
+  h1 { font-size:30px; margin:0 0 6px; }
+  h2 { font-size:23px; margin:44px 0 10px; padding-top:14px; border-top:2px solid var(--line); }
+  h3 { font-size:18px; margin:26px 0 8px; color:#111827; }
+  h4 { font-size:15px; margin:18px 0 6px; }
+  p { margin:8px 0; }
+  .sub { color:var(--mute); margin-bottom:20px; }
+  table { border-collapse:collapse; width:100%; margin:12px 0; font-size:14px; }
+  th, td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#f9fafb; }
+  code, .k { background:#f3f4f6; padding:1px 6px; border-radius:4px; font-family: Consolas, monospace; font-size:13px; }
+  .box { border-radius:8px; padding:12px 16px; margin:14px 0; border:1px solid; }
+  .note { background:var(--soft); border-color:#c7d7fb; }
+  .warn { background:var(--warn); border-color:var(--warnline); }
+  .ok { background:var(--ok); border-color:var(--okline); }
+  .bad { background:var(--bad); border-color:var(--badline); }
+  .box b.t { display:block; margin-bottom:2px; }
+  ol.steps { padding-left:22px; } ol.steps li { margin:6px 0; }
+  figure { margin:16px 0; }
+  figure img { max-width:100%; border:1px solid var(--line); border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  figcaption { font-size:13px; color:var(--mute); margin-top:4px; }
+  .slot { border:2px dashed #cbd5e1; border-radius:8px; padding:26px; text-align:center; color:var(--mute); background:#f8fafc; }
+  .toc a { color:var(--blue); text-decoration:none; } .toc li { margin:3px 0; }
+  .flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:12px 0; }
+  .flow span.s { background:var(--soft); border:1px solid #c7d7fb; border-radius:6px; padding:6px 10px; font-size:13px; }
+  .flow span.a { color:var(--mute); }
+  @media print { h2 { page-break-before:auto; } figure, table { page-break-inside:avoid; } .toc { display:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Payment Vendor Routing - Complete Guide</h1>
+<p class="sub">UtsabPay admin portal &middot; Payout and Credit Card bill payment &middot; From first setup to daily use &middot; Version of 18 Nov 2026</p>
+
+<div class="toc box note">
+<b>Contents</b>
+<ol>
+  <li><a href="#big">The big picture (read this first)</a></li>
+  <li><a href="#before">What must exist before routing</a></li>
+  <li><a href="#golive">Going live with no old flow: step by step</a></li>
+  <li><a href="#tabs">The six tabs, one by one</a>
+    <ol type="a">
+      <li><a href="#t-routings">Routings</a></li>
+      <li><a href="#t-vendors">Product Vendors</a></li>
+      <li><a href="#t-check">Check a Merchant</a></li>
+      <li><a href="#t-engine">Payout Engine</a></li>
+      <li><a href="#t-menus">Menu Rules</a></li>
+      <li><a href="#t-history">History</a></li>
+    </ol>
+  </li>
+  <li><a href="#what-if">"If I do this, what happens?" (cheat sheet)</a></li>
+  <li><a href="#messages">Messages a merchant can see</a></li>
+  <li><a href="#daily">Daily work: new merchants, changing vendors, watching</a></li>
+  <li><a href="#rollback">Switching back safely</a></li>
+  <li><a href="#trouble">Problems and answers</a></li>
+  <li><a href="#words">Small dictionary</a></li>
+</ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="big">1. The big picture</h2>
+
+<p>UtsabPay can pay through more than one company (a <b>vendor</b>). Today: <b>ViMoPay</b> for payouts, and <b>Bill Avenue</b> or <b>SuivrePay</b> for credit card bill payment. Payment Vendor Routing is the admin page where <b>you</b> decide, without any code change:</p>
+<ul>
+  <li><b>which vendor</b> serves a product,</li>
+  <li>in <b>what order</b> (Vendor 1 first, then Vendor 2...),</li>
+  <li>with <b>what limits</b> (minimum/maximum amount, daily, monthly and yearly count and amount),</li>
+  <li>and <b>which merchants and franchises</b> get that routing.</li>
+</ul>
+
+<h3>The five building blocks</h3>
+<table>
+  <tr><th style="width:170px">Block</th><th>What it is</th><th>Where you set it</th></tr>
+  <tr><td><b>Product</b></td><td>A thing we sell. Here: <b>Payout</b> (code 001) and <b>Bill Payment</b> (code 002, with the category "Credit Card").</td><td>Payment &gt; Payment Products</td></tr>
+  <tr><td><b>Vendor</b></td><td>The outside company that really moves the money (ViMoPay, Bill Avenue, SuivrePay).</td><td>Payment &gt; Payment Vendors and Payment Vendors Credentials</td></tr>
+  <tr><td><b>Product Vendor link</b></td><td>"This vendor is allowed to serve this product (and these categories)."</td><td>Routing &gt; <b>Product Vendors</b> tab</td></tr>
+  <tr><td><b>Routing</b></td><td>A named recipe: vendors in order + limits + retry rule. Example: <i>Payout - Default</i>.</td><td>Routing &gt; <b>Routings</b> tab</td></tr>
+  <tr><td><b>Assignment</b></td><td>"This merchant/franchise uses this routing." One account has <b>one routing per product</b>.</td><td>Routings tab &gt; <b>Accounts / Manage</b> button</td></tr>
+</table>
+
+<div class="flow">
+  <span class="s">Vendor exists + credentials</span><span class="a">&rarr;</span>
+  <span class="s">Link vendor to product</span><span class="a">&rarr;</span>
+  <span class="s">Create routing (order + limits)</span><span class="a">&rarr;</span>
+  <span class="s">Assign merchants / franchises</span><span class="a">&rarr;</span>
+  <span class="s">Switch on: Payout Engine + Menu Rules</span>
+</div>
+
+<h3>Three switches decide whether routing is really used</h3>
+<p>Saving a routing alone changes nothing for anyone. Routing starts to act only when these are switched on:</p>
+<table>
+  <tr><th style="width:200px">Switch</th><th>Where</th><th>What it controls</th></tr>
+  <tr><td><b>Payout flow</b> (Old / Pilot / New flow for everyone)</td><td>Payout Engine tab</td><td>Which payout engine runs. The <b>new flow</b> is the safe one: it takes the money first, calls the vendor with no wallet lock, then records the answer, and every try is saved as an <i>attempt</i>.</td></tr>
+  <tr><td><b>Use routing for payouts</b> (tick box)</td><td>Payout Engine tab</td><td>The new flow chooses the vendor from the merchant's routing and checks its limits <b>before any money is taken</b>. Off = always the fixed vendor.</td></tr>
+  <tr><td><b>Menu Rules</b> (Off / Only these accounts / Everyone)</td><td>Menu Rules tab</td><td>A merchant sees the <b>Payout</b> menu only if a Payout routing is assigned. Credit card menus follow the routing's Vendor 1.</td></tr>
+</table>
+
+<div class="box note"><b class="t">Good to know</b>
+All three switches are stored on the server and refresh by themselves <b>within about 15 seconds</b>. No restart is needed. Merchants see menu changes after they reload the page.</div>
+
+<!-- ============================================================ -->
+<h2 id="before">2. What must exist before routing</h2>
+<p>Routing only <i>chooses</i> between things that already exist. Check these first (admin menu names in brackets):</p>
+<table>
+  <tr><th style="width:30px">#</th><th>Item</th><th>Why</th></tr>
+  <tr><td>1</td><td><b>Payment Vendors</b> - ViMoPay, Bill Avenue, SuivrePay are created and <b>Active</b>.</td><td>An inactive vendor cannot be linked or chosen.</td></tr>
+  <tr><td>2</td><td><b>Payment Vendors Credentials</b> - keys for each vendor are saved.</td><td>Without credentials the vendor call fails.</td></tr>
+  <tr><td>3</td><td><b>Payment Products</b> - Payout and Bill Payment exist.</td><td>Routings belong to a product.</td></tr>
+  <tr><td>4</td><td><b>Payment Charges</b> - the charge for the product (for credit card: <code>BBPS_CREDIT_CARD</code>) is set up.</td><td>The wallet debit = amount + charge. No charge, no correct debit.</td></tr>
+  <tr><td>5</td><td><b>Merchant Settings</b> (Others &gt; Merchant Settings) - switch <b>Payout</b> and <b>Credit Card Bill Payment</b> ON per merchant/franchise.</td><td>These per-account switches still apply <b>on top of</b> routing. A menu shows only if its switch is ON <i>and</i> the routing allows it.</td></tr>
+  <tr><td>6</td><td>Your admin role has the permission <b>Payment Vendor Routing</b>.</td><td>The page is admin only.</td></tr>
+</table>
+<figure>{{img:sidebar}}<figcaption>Admin sidebar: Payment &gt; Payment Vendor Routing, and Others &gt; Merchant Settings.</figcaption></figure>
+<figure>{{img:merchant-settings}}<figcaption>Merchant Settings (here for a Franchise Account): the Payout and Credit Card Bill Payment switches. Choose Direct Merchant, Franchise Merchant or Franchise Account first, then the account.</figcaption></figure>
+
+<!-- ============================================================ -->
+<h2 id="golive">3. Going live with no old flow: step by step</h2>
+<p>Goal: <b>every</b> payout uses the new flow and follows routing, and a merchant or franchise sees the Payout / credit card menus <b>only when routing is assigned</b>. Follow the order. Do not skip step 4: accounts without a routing will lose the menu in step 8.</p>
+
+<div class="box warn"><b class="t">Before you start</b>
+Do this in a quiet hour, with one test merchant ready. Have the screens open in two tabs: the admin page and the test merchant login.</div>
+
+<ol class="steps">
+  <li><b>Check vendors.</b> Payment Vendors: all needed vendors Active. Credentials saved.</li>
+  <li><b>Link vendors to products</b> (Product Vendors tab, section 4b). Payout &rarr; ViMoPay. Bill Payment &rarr; Bill Avenue (category Credit Card) and SuivrePay (category Credit Card).</li>
+  <li><b>Create or open the routings</b> (Routings tab, section 4a):
+    <ul>
+      <li><i>Payout - Default</i>: Vendor 1 = ViMoPay. Set realistic limits (see the limit advice below).</li>
+      <li><i>Bill Payment - Default</i>: Vendor 1 = the vendor whose screen you want merchants to use for credit card (Bill Avenue or SuivrePay), Vendor 2 = the other one.</li>
+    </ul></li>
+  <li><b>Assign every account that must keep the menu.</b> In each routing press <b>Manage</b>, choose Merchants (then Franchises), press <b>Select all</b>, then <b>Assign</b>. The box says "Accounts with no routing for Payout (N)". When N is 0 for the accounts you want, you are done. Repeat for each product.</li>
+  <li><b>Check a sample</b> in <b>Check a Merchant</b> (section 4c): one merchant and one franchise, for Payout and for Bill Payment / Credit Card. The answer must name the vendor you expect.</li>
+  <li><b>Merchant Settings</b>: the Payout and Credit Card Bill Payment switches are ON for the accounts that should use them.</li>
+  <li><b>Payout Engine tab</b> (section 4d): choose <b>New flow for everyone</b>, tick <b>Use routing for payouts</b>, press <b>Save</b>, confirm. Wait about 15 seconds.</li>
+  <li><b>Menu Rules tab</b> (section 4e): choose <b>Everyone</b>, press <b>Save</b>, confirm. Wait about 15 seconds.</li>
+  <li><b>Test with a real small payment</b> from the test merchant (₹100 payout; a small credit card bill), then look at the <b>Attempts</b> list and <b>History</b> tab.</li>
+  <li><b>Watch the first day.</b> Open Attempts now and then. Any problem: go to section 8 (switching back).</li>
+</ol>
+
+<h3>Advice for the limits (step 3)</h3>
+<table>
+  <tr><th>Limit</th><th>Advice</th></tr>
+  <tr><td>Min / Max amount</td><td>ViMoPay accepts at least ₹100 and below ₹1,00,000. The system already refuses payouts outside <b>₹100 - ₹99,999</b> before any debit. Set the same here (min 100, max 99999) so the screen shows it.</td></tr>
+  <tr><td>Daily transactions / amount</td><td>Leave empty for no limit, or set the number your vendor agreement allows. All merchants together share this one limit.</td></tr>
+  <tr><td>Monthly / Yearly</td><td>Same idea. A longer period can never be smaller than a shorter one (monthly &ge; daily, yearly &ge; monthly).</td></tr>
+</table>
+<div class="box warn"><b class="t">Important about limits</b>
+A limit empty = <b>no limit</b>. A limit is for <b>all merchants together</b>, not per merchant. Payments that are still <b>Pending</b> count toward the limit. Separately, the vendor ViMoPay has its own rule that one beneficiary can receive only a small amount per day. That is the vendor's rule and cannot be set here.</div>
+
+<div class="box note"><b class="t">What "no old flow" means in practice</b>
+The old payout flow is not deleted. It is only not used while the mode is <b>New flow for everyone</b>. This is deliberate: if something unexpected happens you can switch back in one click (section 8).</div>
+
+<!-- ============================================================ -->
+<h2 id="tabs">4. The six tabs, one by one</h2>
+<p>Open: Admin sidebar &gt; <b>Payment</b> &gt; <b>Payment Vendor Routing</b>. The page has six tabs.</p>
+<figure>{{img:page-top}}<figcaption>Payment Vendor Routing page with its six tabs and the blue information bar.</figcaption></figure>
+
+<!-- ---------- a -->
+<h3 id="t-routings">4a. Routings tab</h3>
+<p><b>Purpose:</b> make and manage the routings (the "recipes"), and decide who uses them.</p>
+<figure>{{img:routings-list}}<figcaption>Routings tab: one row per routing.</figcaption></figure>
+<table>
+  <tr><th style="width:150px">Column</th><th>Meaning</th></tr>
+  <tr><td>Routing</td><td>The name you gave it.</td></tr>
+  <tr><td>Product</td><td>Payout or Bill Payment.</td></tr>
+  <tr><td>Vendors, in order</td><td>Blue chips: <b>1. Vendor</b>, <b>2. Vendor</b>. A grey crossed-out chip is switched off. Hover a chip to see its limits.</td></tr>
+  <tr><td>Retries</td><td>"3 × 3s" = retry 3 times on the same vendor, wait 3 seconds between tries.</td></tr>
+  <tr><td>Accounts</td><td>How many merchants/franchises use it. Press <b>Manage</b> to add or remove.</td></tr>
+  <tr><td>Status</td><td>Green <b>On</b> / grey <b>Off</b>. Click to switch. Off means accounts on it have no vendor for the product.</td></tr>
+  <tr><td>Actions</td><td>Edit (pencil), Delete (bin).</td></tr>
+</table>
+<p>The <b>Product</b> filter at the top shows one product only. <b>Add Routing</b> creates a new one.</p>
+
+<h4>Add / Edit Routing form</h4>
+<figure>{{img:routing-form}}<figcaption>Edit Routing for Payout - Default: Vendor 1 (Vimo Pay), min 100 / max 99999, empty daily, monthly and yearly boxes (= no limit), and retries below.</figcaption></figure>
+<table>
+  <tr><th style="width:200px">Field</th><th>What to enter / what happens</th></tr>
+  <tr><td>Product *</td><td>Payout or Bill Payment. Cannot be changed after saving. The vendor lists below show only vendors linked to this product (Product Vendors tab).</td></tr>
+  <tr><td>Routing name *</td><td>Free text, e.g. <code>Payout - Default</code>. Use clear names, they appear everywhere.</td></tr>
+  <tr><td>Status</td><td>On / Off. Off = the routing exists but nobody can use it.</td></tr>
+  <tr><td>Vendor 1 (required)</td><td>The first choice. Always tried first. It cannot be removed or switched off in this form.</td></tr>
+  <tr><td>Add vendor</td><td>Adds Vendor 2, 3... (up to 10, each vendor once). The <b>up/down arrows</b> change the order; the bin removes a row.</td></tr>
+  <tr><td>On (tick)</td><td>Temporarily skip a vendor without deleting its row.</td></tr>
+  <tr><td>Min / Max amount per transaction</td><td>This vendor is used only for amounts inside this range. Outside = skipped.</td></tr>
+  <tr><td>Daily transactions / amount</td><td>How many payments / how much money this vendor may take <b>today</b>, all merchants together.</td></tr>
+  <tr><td>Monthly transactions / amount</td><td>Same for the calendar month.</td></tr>
+  <tr><td>Yearly transactions / amount</td><td>Same for the calendar year (or financial year if the server is set to start in April).</td></tr>
+  <tr><td>Retries on the same vendor</td><td>How many times a clearly-not-processed try is repeated.</td></tr>
+  <tr><td>Wait between attempts (seconds)</td><td>Pause between tries (never more than 10 seconds in practice).</td></tr>
+</table>
+
+<div class="box note"><b class="t">How the vendor is chosen for a payout</b>
+The system walks down the list. For Vendor 1: is it ON? is the amount inside min/max? is today's count/amount, this month's and this year's still below the limit? If everything is fine, Vendor 1 is used. If not, Vendor 2 is looked at, and so on. If <b>no</b> vendor can serve it, the payout is <b>refused before any money moves</b> and the merchant sees the exact reason (section 6).</div>
+<div class="box warn"><b class="t">Retries and switching</b>
+Retries and "go to the next vendor" happen <b>only when a vendor clearly did not process</b> the payment. If the answer is unclear (Pending/Unknown), the payment is <b>never repeated</b>, so money is never paid twice. With one payout vendor (ViMoPay only) retries do nothing yet; they become active when a second payout vendor is added.</div>
+
+<h4>Managing accounts (Manage button)</h4>
+<figure>{{img:assign-modal}}<figcaption>"Accounts on Payout - Default": add accounts at the top, remove from the list below.</figcaption></figure>
+<ol class="steps">
+  <li>Choose <b>Merchants</b> or <b>Franchises</b>.</li>
+  <li>The list shows only accounts with <b>no routing yet for this product</b>. Search and pick, or press <b>Select all N</b>.</li>
+  <li>Press <b>Assign</b>. They move to the "Assigned" list.</li>
+  <li>To remove: tick the accounts in "Assigned", press <b>Remove</b>, confirm. They then have <b>no routing</b> for that product (and, with Menu Rules on, lose the menu).</li>
+</ol>
+<div class="box note">One account has only <b>one routing per product</b>. To move an account from one routing to another, remove it from the first, then assign it to the second.</div>
+
+<h4>Switching off or deleting a routing</h4>
+<p>If accounts are assigned, the screen asks first. Off or deleted means those accounts have no vendor for that product. Do this only after moving the accounts elsewhere.</p>
+
+<!-- ---------- b -->
+<h3 id="t-vendors">4b. Product Vendors tab</h3>
+<p><b>Purpose:</b> say which vendors are allowed to serve which product. The routing form lists <b>only</b> these vendors.</p>
+<figure>{{img:product-vendors}}<figcaption>Product Vendors for Bill Payment: Bill Avenue serves all categories, SuivrePay serves only Credit Card. Choose a product, then link vendors.</figcaption></figure>
+<ol class="steps">
+  <li>Choose the <b>Product</b>.</li>
+  <li>In "Link a vendor to this product" choose the <b>Vendor</b>.</li>
+  <li><b>Categories</b> (only for Bill Payment): pick one or more from the dropdown (for example <i>Credit Card</i>). Nothing chosen = all categories. The list is built from the real biller data, so nobody types a wrong name.</li>
+  <li>Keep <b>Switched on</b> ticked and press <b>Save</b>.</li>
+</ol>
+<p>Saving a vendor that is already linked updates it. A vendor that is used inside a routing cannot be switched off or removed until it is taken out of that routing.</p>
+<p>For <b>Payout</b> the category box says "This product has no categories".</p>
+
+<!-- ---------- c -->
+<h3 id="t-check">4c. Check a Merchant tab</h3>
+<p><b>Purpose:</b> answer "which vendor would this merchant/franchise get?" Nothing is reserved or changed. Use it before every go-live step and when a merchant complains.</p>
+<figure>{{img:check-merchant}}<figcaption>Check a Merchant: Bill Payment, Credit Card category. Routing "Bill Payment - Default" would use Bill Avenue; SuivrePay is the second choice.</figcaption></figure>
+<ol class="steps">
+  <li>Choose <b>Product</b>.</li>
+  <li>Choose <b>Merchant</b> or <b>Franchise</b> and search the account.</li>
+  <li>Optional <b>Amount</b>: to test the min/max rules.</li>
+  <li>Optional <b>Category</b> (shown only for products with categories): e.g. Credit Card.</li>
+  <li>Press <b>Check</b>.</li>
+</ol>
+<p>The result shows the account, its routing, a green/amber sentence, and a table: for every vendor in order, whether it is <b>chosen</b> and, if not, the reason (switched off, below minimum, above maximum, does not serve this category...).</p>
+<div class="box warn"><b class="t">What this check does not include</b>
+How much of the daily/monthly/yearly limit is already used today. The real payment checks that; this screen only explains the saved settings.</div>
+
+<!-- ---------- e -->
+<h3 id="t-engine">4d. Payout Engine tab</h3>
+<p><b>Purpose:</b> choose the payout engine, and whether payouts follow routing. Below it is the list of <b>Attempts</b>.</p>
+<figure>{{img:engine-top}}<figcaption>Payout flow: Old flow / Pilot / New flow for everyone, and the "Use routing for payouts" box.</figcaption></figure>
+<table>
+  <tr><th style="width:210px">Option</th><th>What happens</th></tr>
+  <tr><td><b>Old flow (today)</b></td><td>Every payout works as before routing existed. Routing is ignored.</td></tr>
+  <tr><td><b>Pilot</b></td><td>Only the chosen accounts use the new flow. Everyone else keeps the old flow. Used for testing with one or two accounts.</td></tr>
+  <tr><td><b>New flow for everyone</b></td><td>Every payout uses the new flow. <b>This is the go-live setting.</b></td></tr>
+  <tr><td><b>Use routing for payouts</b> (tick)</td><td>The new flow picks the vendor and checks limits from the account's routing. Accounts without routing keep using the fixed vendor. Off = routing ignored for payouts.</td></tr>
+</table>
+<p>Press <b>Save</b> and confirm the pop-up. It takes effect within about 15 seconds. Payouts already running finish normally.</p>
+
+<h4>What is the "old flow" and why switch?</h4>
+<table>
+  <tr><th></th><th>Old flow</th><th>New flow</th></tr>
+  <tr><td><b>How it works</b></td><td>Everything in one big step: check, take the money, call the vendor and wait, save the result.</td><td>Three separate steps: (1) check and take the money, commit; (2) call the vendor; (3) record the answer.</td></tr>
+  <tr><td>Wallet locked while the vendor answers</td><td>Yes</td><td>No</td></tr>
+  <tr><td>Follows routing (vendor, limits, retries)</td><td>No, one fixed vendor</td><td>Yes, when "Use routing for payouts" is ticked</td></tr>
+  <tr><td>Every vendor try recorded (Attempts)</td><td>No</td><td>Yes</td></tr>
+  <tr><td>Refused before money moves</td><td>Basic checks only</td><td>Basic checks and routing limits</td></tr>
+</table>
+<p>The old flow is kept in the system only as a safety net. For go-live choose <b>New flow for everyone</b> and tick <b>Use routing for payouts</b>. The choice is stored on the server and survives restarts and deployments, so you do it once.</p>
+<div class="box note"><b class="t">Is there a "credit card engine"?</b>
+No. Credit card bill payment has only one flow, so it needs no engine switch. Credit card follows the <b>Menu Rules</b> tab only (section 4e).</div>
+
+<h4>What the new payout flow does, step by step</h4>
+<ol class="steps">
+  <li><b>Checks</b>: amount between ₹100 and ₹99,999, enough wallet balance, payout switch on. If the routing is used: a vendor is chosen and its limits are checked. A refusal here means <b>no money moved</b>.</li>
+  <li><b>Takes the money</b> (amount + charges) from the wallet and saves the payout as Pending, in one safe step.</li>
+  <li><b>Calls the vendor</b> (no wallet lock while waiting).</li>
+  <li><b>Records the answer</b>: Success &rarr; done. Failed &rarr; the money is <b>refunded exactly once</b>. Pending &rarr; waits for the vendor's callback; when it arrives the payout and its attempt are closed.</li>
+</ol>
+
+<h4>Attempts list</h4>
+<figure>{{img:engine-attempts}}<figcaption>Attempts on the vendor (new flow only): #1 SUCCESS and payout SUCCESS, or #1 FAILED with the vendor's real reason.</figcaption></figure>
+<table>
+  <tr><th style="width:130px">Column</th><th>Meaning</th></tr>
+  <tr><td>Reference</td><td>The payout reference sent to the vendor.</td></tr>
+  <tr><td>Vendor</td><td>Which vendor was called.</td></tr>
+  <tr><td>Attempt</td><td><code>#1 SUCCESS</code>, <code>#1 FAILED</code>, <code>#1 PENDING</code>... number and result of the try.</td></tr>
+  <tr><td>Payout</td><td>Final status of the payout itself.</td></tr>
+  <tr><td>Vendor answer</td><td>The vendor's real reason, for example "Beneficiary Daily Limit exhausted".</td></tr>
+</table>
+
+<!-- ---------- f -->
+<h3 id="t-menus">4e. Menu Rules tab</h3>
+<p><b>Purpose:</b> a merchant or franchise sees a menu <b>only if</b> a routing is assigned to it.</p>
+<figure>{{img:menu-rules}}<figcaption>Menu Rules: Off / Only these accounts / Everyone.</figcaption></figure>
+<table>
+  <tr><th style="width:210px">Mode</th><th>What happens</th></tr>
+  <tr><td><b>Off</b></td><td>Every account sees every menu (as before).</td></tr>
+  <tr><td><b>Only these accounts</b></td><td>The rules apply only to the accounts you pick. Use it to test with one merchant.</td></tr>
+  <tr><td><b>Everyone</b></td><td>The rules apply to every merchant and franchise. <b>Go-live setting.</b></td></tr>
+</table>
+<h4>What a merchant sees when the rules apply</h4>
+<table>
+  <tr><th>Situation</th><th>Result</th></tr>
+  <tr><td>Has a <b>Payout</b> routing (On)</td><td>Payout menu is shown. (Still needs the Payout switch in Merchant Settings.)</td></tr>
+  <tr><td>No Payout routing</td><td>Payout menu is hidden.</td></tr>
+  <tr><td>Has a <b>Bill Payment</b> routing and Vendor 1 for "Credit Card" is <b>Bill Avenue</b></td><td>Bill Pay screen is shown; the <b>Credit Card (SuivrePay)</b> menu is hidden.</td></tr>
+  <tr><td>Vendor 1 for "Credit Card" is <b>SuivrePay</b></td><td>The Credit Card menu is shown; only the <b>Bill Pay</b> screen is hidden (Transaction Status and complaints stay).</td></tr>
+  <tr><td>No Bill Payment routing</td><td>Both Bill Pay and Credit Card menus are hidden.</td></tr>
+  <tr><td>Franchise</td><td>Has no Bill Pay screen. Keeps Credit Card unless its routing offers only Bill Avenue.</td></tr>
+</table>
+<div class="box note"><b class="t">Built to fail safe</b>
+Admins are never affected. If anything goes wrong while reading the rules, <b>nothing is hidden</b>. A vendor is recognised by its name, which must contain "Bill Avenue" or "SuivrePay" - keep those names when you edit vendors.</div>
+<div class="box warn"><b class="t">Two details</b>
+(1) For credit card, the server also <b>refuses the other vendor's screen</b> if someone opens its address directly, and nothing is debited. (2) The Payout rule hides the menu only; it does not by itself refuse payouts (payout limits are checked by routing, section 4d). Merchants see a menu change after they <b>reload the page</b>.</div>
+
+<!-- ---------- g -->
+<h3 id="t-history">4f. History tab</h3>
+<p><b>Purpose:</b> the audit trail. Every change made in this page is recorded: who, when, what, and the details.</p>
+<figure>{{img:history}}<figcaption>History: when, who, what, details.</figcaption></figure>
+<p>Examples of rows: routing created or changed, accounts assigned/removed, vendor linked, Payout Engine mode changed, Menu Rules changed. Use it to answer "who changed this and when?".</p>
+
+<!-- ============================================================ -->
+<h2 id="what-if">5. "If I do this, what happens?" (cheat sheet)</h2>
+<table>
+  <tr><th style="width:42%">If I...</th><th>Then...</th></tr>
+  <tr><td>Save or edit a routing, but switches are Off</td><td>Nothing changes for payments.</td></tr>
+  <tr><td>Set Payout Engine to <b>New flow for everyone</b> and tick <b>Use routing</b></td><td>Every payout follows the account's routing and limits. An account without a routing still pays through the fixed vendor.</td></tr>
+  <tr><td>Set Menu Rules to <b>Everyone</b></td><td>Accounts with no routing lose the Payout / credit card menus. Assign them first.</td></tr>
+  <tr><td>Assign a merchant to a Payout routing</td><td>Payout menu appears (if Merchant Settings Payout is ON and Menu Rules apply).</td></tr>
+  <tr><td>Remove a merchant from a Payout routing</td><td>Payout menu disappears after reload.</td></tr>
+  <tr><td>Put <b>Bill Avenue</b> first in Bill Payment - Default</td><td>Merchants see Bill Pay (Bill Avenue); Credit Card (SuivrePay) menu hides.</td></tr>
+  <tr><td>Put <b>SuivrePay</b> first</td><td>Merchants see the Credit Card menu; the Bill Pay screen hides.</td></tr>
+  <tr><td>Set <b>Daily transactions = 5</b> on Vendor 1 of Payout</td><td>After 5 payouts today (Pending and Success count), the 6th is refused: "Daily payout limit reached. Please try again tomorrow." No debit.</td></tr>
+  <tr><td>Set <b>Max amount = 50000</b></td><td>A ₹60,000 payout is refused: "Amount is above the maximum allowed (50000)."</td></tr>
+  <tr><td>Set <b>Monthly transactions</b> or <b>Yearly amount</b></td><td>Works the same with the monthly / yearly message.</td></tr>
+  <tr><td>Switch the routing <b>Off</b> while accounts are on it</td><td>Those accounts have no vendor for the product (menu hides, payout refused).</td></tr>
+  <tr><td>Add a second payout vendor later</td><td>Link it (Product Vendors), add it as Vendor 2, set retries. A clear "not processed" answer from Vendor 1 can then move to Vendor 2.</td></tr>
+  <tr><td>Set everything Off / Old flow</td><td>The system behaves exactly as before routing.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="messages">6. Messages a merchant can see</h2>
+<table>
+  <tr><th>Message</th><th>Meaning / what to do</th></tr>
+  <tr><td>Payout amount must be between Rs 100 and Rs 99999.</td><td>Amount outside what the vendor accepts. Nothing debited.</td></tr>
+  <tr><td>Daily payout limit reached. Please try again tomorrow.</td><td>The daily <b>count</b> of the vendor is full. Raise it in the routing or wait.</td></tr>
+  <tr><td>Daily payout amount limit reached. Please try again tomorrow or with a smaller amount.</td><td>The daily <b>amount</b> is full or the payment would cross it.</td></tr>
+  <tr><td>Monthly / Yearly payout limit reached... (count or amount)</td><td>Same, for the month / year.</td></tr>
+  <tr><td>Amount is above the maximum allowed (N). / below the minimum</td><td>Outside Min/Max of the vendor.</td></tr>
+  <tr><td>Payout is not available right now. Please try again later.</td><td>No vendor can serve it (all off or no adapter). Vendor names are never shown to the merchant; details are in the server log. Check Check a Merchant.</td></tr>
+  <tr><td>Insufficient balance</td><td>Wallet is less than amount + charges.</td></tr>
+  <tr><td>"Beneficiary Daily Limit exhausted" (vendor's own reason)</td><td>The vendor refuses another payout to the same beneficiary today. The money is refunded once; try another day or another beneficiary.</td></tr>
+  <tr><td>Credit card screen not available</td><td>The other vendor's credit card screen is closed for this account (Menu Rules). Use the screen that is shown.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="daily">7. Daily work</h2>
+<h3>A new merchant or franchise joins</h3>
+<ol class="steps">
+  <li>Create the account as usual.</li>
+  <li>Merchant Settings: switch <b>Payout</b> and/or <b>Credit Card Bill Payment</b> ON.</li>
+  <li><b>Assign the routing</b> (Routings &gt; Manage &gt; Assign). Without it, with Menu Rules on, the menus stay hidden.</li>
+  <li>Check a Merchant to confirm the vendor.</li>
+</ol>
+<div class="box warn"><b class="t">Remember</b>
+New accounts are <b>not</b> assigned automatically. "Menu missing for a new merchant" almost always means no routing is assigned yet.</div>
+
+<h3>Change the vendor order or limits</h3>
+<p>Routings &gt; Edit &gt; change order with the arrows or edit limits &gt; Save. Effective for the next payment. Check History.</p>
+
+<h3>Check how a day went</h3>
+<ul>
+  <li><b>Payout Engine &gt; Attempts</b>: look for <code>FAILED</code> and <code>PENDING</code> rows and read the vendor answer.</li>
+  <li><b>History</b>: who changed what.</li>
+  <li>Reports: Credit Card Bill Report and payout reports for money totals.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="rollback">8. Switching back safely</h2>
+<table>
+  <tr><th>Problem</th><th>Quick action</th><th>Takes effect</th></tr>
+  <tr><td>Payouts behave strangely after go-live</td><td>Payout Engine &rarr; <b>Old flow</b> &rarr; Save</td><td>~15 seconds</td></tr>
+  <tr><td>Payout is refused wrongly by routing</td><td>Untick <b>Use routing for payouts</b> &rarr; Save (the new flow stays, vendor becomes fixed)</td><td>~15 seconds</td></tr>
+  <tr><td>Menus are missing for many people</td><td>Menu Rules &rarr; <b>Off</b> &rarr; Save</td><td>~15 seconds, reload page</td></tr>
+  <tr><td>One routing is wrong</td><td>Edit it, or move accounts to another routing</td><td>Next payment</td></tr>
+</table>
+<p>Money already taken for a payout the vendor refused is refunded automatically, once.</p>
+
+<!-- ============================================================ -->
+<h2 id="trouble">9. Problems and answers</h2>
+<table>
+  <tr><th style="width:36%">Problem</th><th>Check</th></tr>
+  <tr><td>Merchant does not see Payout</td><td>(1) Merchant Settings &gt; Payout ON? (2) Payout routing assigned and On? (3) Menu Rules mode? (4) Page reloaded?</td></tr>
+  <tr><td>Merchant sees both Bill Pay and Credit Card</td><td>Menu Rules is Off, or the merchant is not in "Only these accounts".</td></tr>
+  <tr><td>Merchant sees neither</td><td>No Bill Payment routing assigned.</td></tr>
+  <tr><td>"Vendor 1 is required" when saving</td><td>Choose a vendor in the first row.</td></tr>
+  <tr><td>Vendor missing in the routing form</td><td>Link it in Product Vendors first; it must be switched on and the vendor Active.</td></tr>
+  <tr><td>Cannot save limits</td><td>A longer period cannot be smaller than a shorter one (monthly &lt; daily is not allowed).</td></tr>
+  <tr><td>Attempt stays Pending</td><td>The vendor has not confirmed. Pending clears when its callback arrives. Do not repeat the payout.</td></tr>
+  <tr><td>Wallet debited but payout Failed</td><td>The refund is automatic and happens once. If you doubt it, compare the wallet ledger of the payout reference.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="words">10. Small dictionary</h2>
+<table>
+  <tr><td style="width:190px"><b>Vendor</b></td><td>The outside company that moves the money.</td></tr>
+  <tr><td><b>Routing</b></td><td>Vendors in order + limits + retry rule, with the accounts that use it.</td></tr>
+  <tr><td><b>Assignment</b></td><td>Account &harr; routing link. One per product.</td></tr>
+  <tr><td><b>Attempt</b></td><td>One try on a vendor for one payout.</td></tr>
+  <tr><td><b>Pending</b></td><td>The vendor has not given a final answer yet.</td></tr>
+  <tr><td><b>Pilot</b></td><td>A switch mode that applies only to chosen accounts.</td></tr>
+  <tr><td><b>Fail-open</b></td><td>On doubt, show the menu / do not restrict. Safety rule of Menu Rules.</td></tr>
+  <tr><td><b>Beneficiary</b></td><td>The person or account that receives a payout.</td></tr>
+</table>
+
+<p class="sub" style="margin-top:40px">End of guide.</p>
+</div>
+</body>
+</html>

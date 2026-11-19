@@ -34,6 +34,7 @@ import {
   BellRing
 } from 'lucide-react';
 import { flattenPermissions } from "./permissionHelper";
+import api from '../../constants/API/axiosInstance';
 import logoImage from '../../assets/SD-2.jpg';
 import bMnemonicLogo from '../../assets/bbps-brand/b-mnemonic-logo.svg';
 
@@ -535,6 +536,33 @@ const getMenuItems = (userType) => {
   return MERCHANT_MENU_CONFIG;
 };
 
+// Menu Rules (merchants and franchises). When the rules apply to the account (applies = true), the server says
+// which menus it has a routing for: Payout, the Bill Pay screen (Bill Avenue) and the Credit Card screen
+// (SuivrePay). Only the Bill Pay SCREEN is removed from the Bill Payment menu: Transaction Status and the
+// complaint screens stay, so past payments can still be followed. Not applying, or any error: nothing is hidden.
+const BILL_PAY_PATH = '/dashboard/bill-payment';
+
+const applyMenuRules = (items, menu) => {
+  if (!menu || !menu.applies) {
+    return items;
+  }
+  let out = items;
+  if (menu.payout === false) {
+    out = out.filter(item => item.key !== MENU_KEYS.PAYOUT);
+  }
+  if (menu.creditCard === false) {
+    out = out.filter(item => item.key !== MENU_KEYS.CREDIT_CARD);
+  }
+  if (menu.billPay === false) {
+    out = out.map(item =>
+      item.key === MENU_KEYS.BILL_PAYMENT && item.children
+        ? { ...item, children: item.children.filter(child => child.path !== BILL_PAY_PATH) }
+        : item
+    );
+  }
+  return out;
+};
+
 // ============================================================================
 // COMPONENTS
 // ============================================================================
@@ -688,11 +716,9 @@ const Sidebar = ({ userType }) => {
     setSidebarCollapsed(false);
   };
 
+  // Only one menu stays open at a time: opening a menu closes the one that was open; clicking the open one closes it.
   const toggleMenu = (menuKey) => {
-    setExpandedMenus(prev => ({
-      ...prev,
-      [menuKey]: !prev[menuKey]
-    }));
+    setExpandedMenus(prev => (prev[menuKey] ? {} : { [menuKey]: true }));
   };
 
   const toggleSidebar = () => {
@@ -706,10 +732,7 @@ const Sidebar = ({ userType }) => {
   const handleMenuClick = (menuKey) => {
     if (sidebarCollapsed) {
       setSidebarCollapsed(false);
-      setExpandedMenus(prev => ({
-        ...prev,
-        [menuKey]: true
-      }));
+      setExpandedMenus({ [menuKey]: true });
     } else {
       toggleMenu(menuKey);
     }
@@ -719,6 +742,28 @@ const Sidebar = ({ userType }) => {
     return children?.some(child => location.pathname === child.path);
   };
 
+  // Which menus the account should see (Menu Rules). null = nothing hidden (the default, and the answer whenever
+  // the rules are off, do not apply to this account, or anything is unclear).
+  const [menuRules, setMenuRules] = useState(null);
+
+  useEffect(() => {
+    if (userType !== USER_TYPES.MERCHANT && userType !== USER_TYPES.FRANCHISE) {
+      setMenuRules(null);
+      return undefined;
+    }
+    let cancelled = false;
+    api.get('/payment-routing/my-menu')
+      .then((res) => {
+        if (!cancelled) setMenuRules(res?.data?.data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setMenuRules(null);   // never hide a menu because of an error
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userType]);
+
   const menuItems = useMemo(() => {
     let items = getMenuItems(userType);
 
@@ -726,8 +771,12 @@ const Sidebar = ({ userType }) => {
       items = filterMenuItemsByPermissions(items, permissionSet, userType);
     }
 
+    if (userType === USER_TYPES.MERCHANT || userType === USER_TYPES.FRANCHISE) {
+      items = applyMenuRules(items, menuRules);
+    }
+
     return items;
-  }, [userType, permissionSet]);
+  }, [userType, permissionSet, menuRules]);
 
   return (
     <div
