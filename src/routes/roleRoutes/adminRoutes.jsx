@@ -6,7 +6,7 @@ const PaymentVendorCredentialsTable = lazy(() => import('../../components/Tables
 const PaymentChargesTable = lazy(() =>  import('../../components/Tables/PaymentChargesTable.jsx'));
 const PaymentProductsTable = lazy(() =>  import('../../components/Tables/PaymentProductsTable.jsx'));
 const PaymentVendorsTable = lazy(() =>  import('../../components/Tables/PaymentVendorsTable.jsx'));
-const PaymentVendorRoutingTable = lazy(() =>  import('../../components/Tables/PaymentVendorRoutingTable.jsx'));
+const PaymentVendorRoutingTable = lazy(() => import('../../components/PaymentRouting/PaymentRoutingPage.jsx'));
 const Dashboard = lazy(() => import('../../components/DashBoards/Dashborad.jsx'));
 const CustomerOnboarding = lazy(() => import('../../components/Forms/CustomerOnboarding/CustomerOnborading.jsx'));
 const VendorListPage = lazy(() => import('../../components/Tables/VendorTable.jsx'));
