@@ -97,7 +97,7 @@ const CustomerDashboard = ({ userType }) => {
     // Show loading state while waiting for userId
     if (!userId) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="flex items-center space-x-3 text-slate-600">
                     <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
                     <span className="text-xl font-medium">Initializing Dashboard...</span>
@@ -108,7 +108,7 @@ const CustomerDashboard = ({ userType }) => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="flex items-center space-x-3 text-slate-600">
                     <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
                     <span className="text-xl font-medium">Loading Dashboard...</span>
@@ -119,7 +119,7 @@ const CustomerDashboard = ({ userType }) => {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-md shadow-lg">
                     <div className="flex items-center space-x-3 text-red-700 mb-4">
                         <AlertCircle className="w-6 h-6" />
@@ -136,26 +136,38 @@ const CustomerDashboard = ({ userType }) => {
         );
     }
 
-    const StatCard = ({ title, value, icon: Icon, color = "blue", subtitle = null, bgGradient = null }) => (
-        <div className={`${bgGradient || 'bg-white'} rounded-xl shadow-lg border-0 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}>
-            <div className="flex items-start justify-between">
-                <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-600 mb-2">{title}</p>
-                    <p className={`text-3xl font-bold mb-1 ${bgGradient ? 'text-white' : `text-${color}-600`}`}>
-                        {value}
-                    </p>
-                    {subtitle && (
-                        <p className={`text-sm ${bgGradient ? 'text-white text-opacity-80' : 'text-slate-500'}`}>
-                            {subtitle}
+    // Card colors (same look as the admin dashboard): colored strip on top, colored number, soft icon box.
+    // The old color names are kept: green = teal, blue = blue, orange = amber.
+    const CARD_COLORS = {
+        green: { strip: '#14b8a6', text: '#0f766e', soft: '#ccfbf1' },
+        blue: { strip: '#3b82f6', text: '#1d4ed8', soft: '#dbeafe' },
+        orange: { strip: '#f59e0b', text: '#b45309', soft: '#fef3c7' },
+    };
+
+    const StatCard = ({ title, value, icon: Icon, color = "blue", subtitle = null }) => {
+        const c = CARD_COLORS[color] || CARD_COLORS.blue;
+        return (
+            <div
+                className="bg-white rounded-xl shadow-sm border border-slate-200 border-t-4 p-6 hover:shadow-md transition-shadow duration-300"
+                style={{ borderTopColor: c.strip }}
+            >
+                <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-600 mb-2">{title}</p>
+                        <p className="text-3xl font-bold mb-1" style={{ color: c.text }}>
+                            {value}
                         </p>
-                    )}
-                </div>
-                <div className={`p-3 rounded-xl ${bgGradient ? 'bg-white bg-opacity-20' : `bg-${color}-50`}`}>
-                    <Icon className={`w-6 h-6 ${bgGradient ? 'text-white' : `text-${color}-600`}`} />
+                        {subtitle && (
+                            <p className="text-sm text-slate-500">{subtitle}</p>
+                        )}
+                    </div>
+                    <div className="p-3 rounded-xl" style={{ backgroundColor: c.soft }}>
+                        <Icon className="w-6 h-6" style={{ color: c.text }} />
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const ProductCard = ({ product, userType }) => {
         const isDirectMerchant = userType === 'merchant' && product.outwardId;
@@ -190,9 +202,9 @@ const CustomerDashboard = ({ userType }) => {
                     )}
 
                     {(isDirectMerchant || isFranchiseMerchant) && (
-                        <div className="col-span-2 text-center p-4 bg-purple-50 rounded-lg">
-                            <p className="text-3xl font-bold text-purple-600">{product.totalQuantity}</p>
-                            <p className="text-sm text-purple-700">Allocated Quantity</p>
+                        <div className="col-span-2 text-center p-4 bg-teal-50 rounded-lg">
+                            <p className="text-3xl font-bold text-teal-700">{product.totalQuantity}</p>
+                            <p className="text-sm text-teal-800">Allocated Quantity</p>
                         </div>
                     )}
                 </div>
@@ -227,7 +239,7 @@ const CustomerDashboard = ({ userType }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="min-h-screen">
             <div className="container mx-auto px-6 py-8">
                 {/* Header */}
                 <div className="mb-8">
@@ -266,7 +278,7 @@ const CustomerDashboard = ({ userType }) => {
                                 icon={Users}
                                 color="blue"
                                 subtitle="Under your franchise"
-                                bgGradient="bg-gradient-to-br from-blue-500 to-blue-600"
+                               
                             />
                             <StatCard
                                 title="Outward Transactions"
@@ -281,7 +293,7 @@ const CustomerDashboard = ({ userType }) => {
                                 icon={Package}
                                 color="orange"
                                 subtitle="In your inventory"
-                                bgGradient="bg-gradient-to-br from-orange-500 to-red-500"
+                               
                             />
                         </>
                     ) : (
@@ -292,7 +304,7 @@ const CustomerDashboard = ({ userType }) => {
                                 icon={ShoppingCart}
                                 color="green"
                                 subtitle="Total transactions"
-                                bgGradient="bg-gradient-to-br from-green-500 to-emerald-600"
+                               
                             />
                             <StatCard
                                 title="Products Allocated"

@@ -217,7 +217,7 @@ const Header = ({ userType }) => {
 
   return (
     <>
-      <header className="ml-15 bg-gray-200 shadow-sm border-b border-gray-200 sticky top-0 z-10">
+      <header className="app-header ml-15 bg-gray-200 shadow-sm border-b border-gray-200 sticky top-0 z-10">
 
         <div className="flex items-center justify-between px-6 py-2">
           {/* Left Section */}
@@ -225,13 +225,13 @@ const Header = ({ userType }) => {
             <img
               src="https://tse1.explicit.bing.net/th/id/OIP.I5BlfjjUo-Nipl3YqCsNvQHaFW?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
               alt="Logo"
-              className="w-[55px] h-[50px] object-contain mx-auto rounded-xl mt-1 p-1 mr-2 bg-gray-500"
+              className="hd-logo w-[55px] h-[50px] object-contain mx-auto rounded-xl mt-1 p-1 mr-2 bg-gray-500"
             />
             <div className="flex flex-col">
 
-              <h1 className="text-2xl font-semibold text-gray-900">{getPageTitle()}</h1>
+              <h1 className="hd-title text-2xl font-semibold text-gray-900">{getPageTitle()}</h1>
               {getBreadcrumb() && (
-                <nav className="text-sm text-gray-500 mt-1">{getBreadcrumb()}</nav>
+                <nav className="hd-crumb text-sm text-gray-500 mt-1">{getBreadcrumb()}</nav>
               )}
             </div>
           </div>
@@ -242,10 +242,10 @@ const Header = ({ userType }) => {
             {["admin", "super_admin"].includes(userType) && (
               <Link
                 to="/dashboard/monitoring"
-                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="hd-btn relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 title="Transaction Monitoring alerts"
               >
-                <Bell className="h-5 w-5 text-gray-600" />
+                <Bell className="hd-bell h-5 w-5 text-gray-600" />
                 {openAlertCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {openAlertCount > 99 ? '99+' : openAlertCount}
@@ -257,11 +257,11 @@ const Header = ({ userType }) => {
             {/* Wallet only for merchant/franchise */}
             {(userType === 'merchant' || userType === 'franchise') &&
               profileData?.walletBalance !== undefined && (
-                <div className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                  <Wallet className="h-5 w-5 text-gray-600" />
+                <div className="hd-wallet flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                  <Wallet className="hd-wallet-ico h-5 w-5 text-gray-600" />
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Wallet Balance</p>
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="hd-wallet-label text-xs text-gray-500">Wallet Balance</p>
+                    <p className="hd-wallet-val text-sm font-semibold text-gray-900">
                       ₹{profileData.walletBalance?.toLocaleString() ?? '0'}
                     </p>
                   </div>
@@ -273,20 +273,20 @@ const Header = ({ userType }) => {
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                  className="hd-btn flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-cyan-500  to-gray-700 rounded-full flex items-center justify-center">
+                  <div className="hd-avatar w-8 h-8 bg-gradient-to-br from-cyan-500  to-gray-700 rounded-full flex items-center justify-center">
                     <span className="text-sm font-bold text-white">
                       {profileData.initials}
                     </span>
                   </div>
                   <div className="text-left hidden md:block">
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="hd-name text-sm font-semibold text-gray-900">
                       {profileData.name}
                     </p>
-                    <p className="text-xs text-gray-500">{profileData.email}</p>
+                    <p className="hd-email text-xs text-gray-500">{profileData.email}</p>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="hd-chev h-4 w-4 text-gray-400" />
                 </button>
 
                 {showUserMenu && (

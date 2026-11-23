@@ -583,19 +583,19 @@ const MenuItem = React.memo(({
       <div>
         <button
           onClick={() => onMenuClick(item.key)}
-          className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200 hover:bg-blue-100 group ${isParentActive ? 'bg-blue-100 border border-blue-500' : ''
+          className={`sb-item ${isParentActive ? 'sb-active' : ''} w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200 hover:bg-blue-100 group ${isParentActive ? 'bg-blue-100 border border-blue-500' : ''
             }`}
           aria-label={`${item.title} menu`}
           aria-expanded={isActive}
         >
           <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-lg ${isParentActive ? 'bg-blue-100' : 'bg-gray-100 group-hover:bg-gray-200'
+            <div className={`sb-chip p-2 rounded-lg ${isParentActive ? 'bg-blue-100' : 'bg-gray-100 group-hover:bg-gray-200'
               } transition-colors duration-200`}>
-              <item.icon className={`w-5 h-5 ${isParentActive ? 'text-blue-600' : item.iconColor || 'text-gray-600'
+              <item.icon className={`sb-ico w-5 h-5 ${isParentActive ? 'text-blue-600' : item.iconColor || 'text-gray-600'
                 }`} />
             </div>
             {!sidebarCollapsed && (
-              <span className={`font-medium ${isParentActive ? 'text-blue-900' : 'text-gray-700'
+              <span className={`sb-label font-medium ${isParentActive ? 'text-blue-900' : 'text-gray-700'
                 }`}>
                 {item.title}
               </span>
@@ -604,9 +604,9 @@ const MenuItem = React.memo(({
           {!sidebarCollapsed && (
             <div className="transition-transform duration-200">
               {isActive ? (
-                <ChevronDown className="w-4 h-4 text-gray-600" />
+                <ChevronDown className="sb-chev w-4 h-4 text-gray-600" />
               ) : (
-                <ChevronRight className="w-4 h-4 text-gray-600" />
+                <ChevronRight className="sb-chev w-4 h-4 text-gray-600" />
               )}
             </div>
           )}
@@ -618,7 +618,7 @@ const MenuItem = React.memo(({
               <Link
                 key={child.path}
                 to={child.path}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActiveLink(child.path)
+                className={`sb-child ${isActiveLink(child.path) ? 'sb-child-active' : ''} flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActiveLink(child.path)
                   ? 'bg-gray-500 text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
@@ -637,17 +637,17 @@ const MenuItem = React.memo(({
   return (
     <Link
       to={item.path}
-      className={`flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 hover:bg-gray-50 group ${isActiveLink(item.path) ? 'bg-blue-50 border border-blue-200' : ''
+      className={`sb-item ${isActiveLink(item.path) ? 'sb-active' : ''} flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 hover:bg-gray-50 group ${isActiveLink(item.path) ? 'bg-blue-50 border border-blue-200' : ''
         }`}
       aria-label={item.title}
     >
-      <div className={`p-2 rounded-lg ${isActiveLink(item.path) ? 'bg-blue-100' : 'bg-gray-100 group-hover:bg-gray-200'
+      <div className={`sb-chip p-2 rounded-lg ${isActiveLink(item.path) ? 'bg-blue-100' : 'bg-gray-100 group-hover:bg-gray-200'
         } transition-colors duration-200`}>
-        <item.icon className={`w-5 h-5 ${isActiveLink(item.path) ? 'text-blue-600' : item.iconColor || 'text-gray-600'
+        <item.icon className={`sb-ico w-5 h-5 ${isActiveLink(item.path) ? 'text-blue-600' : item.iconColor || 'text-gray-600'
           }`} />
       </div>
       {!sidebarCollapsed && (
-        <span className={`font-medium ${isActiveLink(item.path) ? 'text-blue-900' : 'text-gray-700'
+        <span className={`sb-label font-medium ${isActiveLink(item.path) ? 'text-blue-900' : 'text-gray-700'
           }`}>
           {item.title}
         </span>
@@ -662,25 +662,25 @@ const SidebarHeader = React.memo(({ sidebarCollapsed, onToggle, userType }) => {
   const displayText = USER_TYPE_DISPLAY[userType] || USER_TYPE_DISPLAY.default;
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-200">
+    <div className="sb-head flex items-center justify-between p-4 bg-gray-200">
       {!sidebarCollapsed && (
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg">
             <img
               src="https://tse1.explicit.bing.net/th/id/OIP.I5BlfjjUo-Nipl3YqCsNvQHaFW?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
               alt="Logo"
-              className="w-[55px] h-[55px] object-contain mx-auto rounded-xl p-1 bg-gray-500"
+              className="sb-logo w-[55px] h-[55px] object-contain mx-auto rounded-xl p-1 bg-gray-500"
             />
           </div>
           <div>
-            <h1 className="text-xs font-bold text-gray-800">Merchant Management System</h1>
-            <p className="text-xs text-gray-500">{displayText}</p>
+            <h1 className="sb-title text-xs font-bold text-gray-800">Merchant Management System</h1>
+            <p className="sb-subtitle text-xs text-gray-500">{displayText}</p>
           </div>
         </div>
       )}
       <button
         onClick={onToggle}
-        className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+        className="sb-toggle p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
         aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {sidebarCollapsed ? (
@@ -783,7 +783,7 @@ const Sidebar = ({ userType }) => {
       ref={sidebarRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`${sidebarCollapsed ? 'w-16' : 'w-64'
+      className={`sb-root ${sidebarCollapsed ? 'w-16' : 'w-64'
         } bg-gray-200 shadow-xl transition-[width] duration-300 ease-out flex flex-col border-r border-gray-200 h-full overflow-hidden`}
       role="navigation"
       aria-label="Main navigation"

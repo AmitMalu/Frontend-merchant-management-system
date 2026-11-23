@@ -74,18 +74,30 @@ const AdminDashboard = () => {
     // Destructure the consolidated data
     const { franchiseStats, transactionStats, pricingSchemeStats, productStats,expiringSchemes } = dashboardData || {};
 
-    const StatCard = ({ title, value, icon: Icon, color = "blue", subtitle = null, trend = null }) => (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+    // Card colors (Option 2 look): a thick colored strip on top, colored number, soft icon box.
+    const CARD_COLORS = {
+        teal: { strip: '#14b8a6', text: '#0f766e', soft: '#ccfbf1' },
+        blue: { strip: '#3b82f6', text: '#1d4ed8', soft: '#dbeafe' },
+        violet: { strip: '#8b5cf6', text: '#6d28d9', soft: '#ede9fe' },
+        amber: { strip: '#f59e0b', text: '#b45309', soft: '#fef3c7' },
+    };
+    const cardColor = (color) => CARD_COLORS[color] || CARD_COLORS.teal;
+
+    const StatCard = ({ title, value, icon: Icon, color = "teal", subtitle = null, trend = null }) => (
+        <div
+            className="bg-white rounded-xl shadow-sm border border-slate-200 border-t-4 p-6 hover:shadow-md transition-shadow"
+            style={{ borderTopColor: cardColor(color).strip }}
+        >
             <div className="flex items-start justify-between">
                 <div>
                     <p className="text-sm font-medium text-slate-600 mb-1">{title}</p>
-                    <p className={`text-3xl font-bold text-${color}-600 mb-1`}>{value}</p>
+                    <p className="text-3xl font-bold mb-1" style={{ color: cardColor(color).text }}>{value}</p>
                     {subtitle && (
                         <p className="text-xs text-slate-500">{subtitle}</p>
                     )}
                 </div>
-                <div className={`p-3 rounded-lg bg-${color}-50`}>
-                    <Icon className={`w-6 h-6 text-${color}-600`} />
+                <div className="p-3 rounded-lg" style={{ backgroundColor: cardColor(color).soft }}>
+                    <Icon className="w-6 h-6" style={{ color: cardColor(color).text }} />
                 </div>
             </div>
             {trend && (
@@ -132,7 +144,7 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="min-h-screen">
             <div className=" mx-auto px-6">
                 {/* Header */}
                 <div className="mb-4">
@@ -157,28 +169,28 @@ const AdminDashboard = () => {
                         title="Total Franchises"
                         value={franchiseStats?.totalFranchises || 0}
                         icon={Handshake}
-                        color="blue"
+                        color="teal"
                         subtitle="Active franchise locations"
                     />
                     <StatCard
                         title="Total Merchants"
                         value={franchiseStats?.totalMerchants || 0}
                         icon={Users}
-                        color="green"
+                        color="blue"
                         subtitle={`${franchiseStats?.totalDirectMerchants || 0} direct, ${franchiseStats?.totalFranchiseMerchants || 0} franchise`}
                     />
                     <StatCard
                         title="Total Products"
                         value={productStats?.totalProducts || 0}
                         icon={Package}
-                        color="purple"
+                        color="violet"
                         subtitle={`${productStats?.activeProducts || 0} active, ${productStats?.inactiveProducts || 0} inactive`}
                     />
                     <StatCard
                         title="Pricing Schemes"
                         value={pricingSchemeStats?.totalSchemes || 0}
                         icon={CreditCard}
-                        color="orange"
+                        color="amber"
                         subtitle={`${pricingSchemeStats?.totalDirectMerchantSchemes || 0} direct, ${pricingSchemeStats?.totalFranchiseSchemes || 0} franchise`}
                     />
                 </div>

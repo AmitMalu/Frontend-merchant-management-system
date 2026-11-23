@@ -1,0 +1,79 @@
+/*
+  App theme for admin, merchant and franchise (Option 2: navy sidebar, teal header, Poppins).
+  Everything is under ".theme-app", which Layout.jsx puts on the page layout. The login page and
+  other screens outside the layout are not affected.
+  Blue / indigo -> teal for all pages is in app-theme-colors.css (generated).
+*/
+
+.theme-app {
+  font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background-color: #eef4f7;
+}
+
+/* ---------- page area ---------- */
+.theme-app .app-main { background-color: #eef4f7; }
+.theme-app .min-h-screen.bg-gray-50,
+.theme-app .min-h-screen.bg-gray-100 { background-color: #eef4f7; }
+.theme-app .from-slate-50 {
+  --tw-gradient-from: #eef4f7 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(238 244 247 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.theme-app .to-slate-100 { --tw-gradient-to: #eef4f7 var(--tw-gradient-to-position); }
+.theme-app .border-slate-200 { border-color: #dbe7ee; }
+
+/* tables */
+.theme-app thead { background-color: #e6f3f0; }
+
+/* dark modal headers (gray gradient) become navy */
+.theme-app .from-gray-700 {
+  --tw-gradient-from: #16405a var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(22 64 90 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.theme-app .to-gray-900 { --tw-gradient-to: #0f2a3d var(--tw-gradient-to-position); }
+
+/* ---------- header ---------- */
+.theme-app .app-header { background-color: #0f766e; border-color: #0d6b63; }
+.theme-app .app-header .hd-logo { background-color: #fff; }
+.theme-app .app-header .hd-title { color: #fff; }
+.theme-app .app-header .hd-crumb { color: #b7ece6; }
+.theme-app .app-header .hd-btn:hover { background-color: rgba(255, 255, 255, 0.15); }
+.theme-app .app-header .hd-bell { color: #fff; }
+.theme-app .app-header .hd-name { color: #fff; }
+.theme-app .app-header .hd-email { color: #b7ece6; }
+.theme-app .app-header .hd-chev { color: #b7ece6; }
+.theme-app .app-header .hd-avatar { background-image: none; background-color: #fff; }
+.theme-app .app-header .hd-avatar span { color: #0f766e; }
+/* wallet balance pill (merchant and franchise) */
+.theme-app .app-header .hd-wallet { background-color: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.28); }
+.theme-app .app-header .hd-wallet-ico { color: #fff; }
+.theme-app .app-header .hd-wallet-label { color: #b7ece6; }
+.theme-app .app-header .hd-wallet-val { color: #fff; }
+
+/* ---------- sidebar ---------- */
+.theme-app .sb-root { background-color: #0f2a3d; border-color: #0b2030; }
+.theme-app .sb-root .sb-head { background-color: #0b2233; }
+.theme-app .sb-root .sb-logo { background-color: #fff; }
+.theme-app .sb-root .sb-title { color: #fff; }
+.theme-app .sb-root .sb-subtitle { color: #a9c3d1; }
+.theme-app .sb-root .sb-toggle:hover { background-color: rgba(255, 255, 255, 0.12); }
+.theme-app .sb-root .sb-toggle svg { color: #a9c3d1; }
+
+.theme-app .sb-root .sb-item { border: 1px solid transparent; }
+.theme-app .sb-root .sb-item:hover { background-color: #16405a; }
+.theme-app .sb-root .sb-item.sb-active { background-color: #16405a; border-color: #2dd4bf; }
+.theme-app .sb-root .sb-chip { background-color: rgba(255, 255, 255, 0.08); }
+.theme-app .sb-root .sb-item:hover .sb-chip { background-color: rgba(255, 255, 255, 0.14); }
+.theme-app .sb-root .sb-item.sb-active .sb-chip { background-color: rgba(45, 212, 191, 0.25); }
+.theme-app .sb-root .sb-ico { color: #a9c3d1; }
+.theme-app .sb-root .sb-item.sb-active .sb-ico { color: #5eead4; }
+/* the Bharat Connect logo is an image in dark blue: keep it readable on the navy sidebar */
+.theme-app .sb-root img.sb-ico { background-color: #fff; border-radius: 4px; padding: 1px; }
+.theme-app .sb-root .sb-label { color: #d5e4ec; }
+.theme-app .sb-root .sb-item.sb-active .sb-label { color: #fff; }
+.theme-app .sb-root .sb-chev { color: #a9c3d1; }
+
+.theme-app .sb-root .sb-child { color: #a9c3d1; }
+.theme-app .sb-root .sb-child:hover { background-color: #16405a; color: #fff; }
+.theme-app .sb-root .sb-child.sb-child-active { background-color: #0f766e; color: #fff; }
