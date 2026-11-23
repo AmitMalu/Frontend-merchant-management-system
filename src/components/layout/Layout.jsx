@@ -64,8 +64,9 @@ const BuildInfoBadge = () => {
 const Layout = () => {
 
   const userType = localStorage.getItem("userType").toLowerCase()
+  // The teal / navy look (src/app-theme.css) is used for every role: admin, merchant and franchise.
   return (
-    <div className="flex h-screen bg-gray-100 relative">
+    <div className="theme-app flex h-screen bg-gray-100 relative">
       {/* Sidebar - Positioned absolutely to overlay */}
       <div className="absolute inset-y-0 left-0 z-30 h-full">
         <Sidebar userType={userType} />
@@ -77,7 +78,7 @@ const Layout = () => {
         <Header userType={userType} />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 pl-20 pt-6">
+        <main className="app-main flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 pl-20 pt-6">
           <Outlet />
         </main>
 
