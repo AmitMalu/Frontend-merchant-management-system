@@ -17,6 +17,8 @@ import {
   CreditCard,
   Store,
   Banknote,
+  Wallet,
+  ArrowLeftRight,
   Coins,
   Eye,
   Package2,
@@ -436,11 +438,11 @@ const FRANCHISE_MENU_CONFIG = [
     title: 'Funding',
     path: '/dashboard/funding',
     key: MENU_KEYS.FUNDING,
-    icon: Banknote,
+    icon: Wallet,
     iconColor: '',
     children: [
-      { title: 'Prefund Wallet', path: '/dashboard/funding/prefund-wallet', icon: Banknote },
-      { title: 'Credit / Debit Wallet', path: '/dashboard/funding/credit-debit-wallet', icon: Banknote }
+      { title: 'Prefund Wallet', path: '/dashboard/funding/prefund-wallet', icon: Wallet },
+      { title: 'Credit / Debit Wallet', path: '/dashboard/funding/credit-debit-wallet', icon: ArrowLeftRight }
 
     ]
   }
@@ -514,10 +516,10 @@ const MERCHANT_MENU_CONFIG = [
     title: 'Funding',
     path: '/dashboard/funding',
     key: MENU_KEYS.FUNDING,
-    icon: BarChart3,
+    icon: Wallet,
     iconColor: '',
     children: [
-      { title: 'Prefund Wallet', path: '/dashboard/funding/prefund-wallet', icon: BarChart3 }
+      { title: 'Prefund Wallet', path: '/dashboard/funding/prefund-wallet', icon: Wallet }
     ]
   }
 ];
