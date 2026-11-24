@@ -50,6 +50,8 @@
 .theme-app .app-header .hd-wallet-ico { color: #fff; }
 .theme-app .app-header .hd-wallet-label { color: #b7ece6; }
 .theme-app .app-header .hd-wallet-val { color: #fff; }
+.theme-app .app-header .hd-wallet-refresh { color: #fff; }
+.theme-app .app-header .hd-wallet-refresh:hover { background-color: rgba(255, 255, 255, 0.2); }
 
 /* ---------- sidebar ---------- */
 .theme-app .sb-root { background-color: #0f2a3d; border-color: #0b2030; }

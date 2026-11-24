@@ -24,8 +24,25 @@ const inwardSchema = z.object({
 })
 
 
+// The same MID / TID / SID / VPAID twice in one entry (ignoring capital letters). Returns text like
+// "MID 123" for the first repeat found, or null when there is none. Blank values are not compared.
+const findRepeatedSerialValue = (serialNumbers) => {
+  const fields = [['mid', 'MID'], ['sid', 'SID'], ['tid', 'TID'], ['vpaid', 'VPAID']]
+  for (const [key, label] of fields) {
+    const seen = new Set()
+    for (const row of serialNumbers) {
+      const value = row[key]
+      if (!value) continue
+      const lower = value.toLowerCase()
+      if (seen.has(lower)) return `${label} ${value}`
+      seen.add(lower)
+    }
+  }
+  return null
+}
+
 // Updated InwardFormModal with fixed serial data handling
-const InwardFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
+const InwardFormModal =({ isOpen, onClose, onSubmit, editData = null }) => {
   const [serialGridData, setSerialGridData] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -206,10 +223,10 @@ const InwardFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
             return hasAnySelected;
           })
           .map(row => ({
-            mid: row.selectedFields.MID && row.MID ? row.MID : null,
-            sid: row.selectedFields.SID && row.SID ? row.SID : null,
-            tid: row.selectedFields.TID && row.TID ? row.TID : null,
-            vpaid: row.selectedFields.VpID && row.VpID ? row.VpID : null
+            mid: row.selectedFields.MID && row.MID?.trim() ? row.MID.trim() : null,
+            sid: row.selectedFields.SID && row.SID?.trim() ? row.SID.trim() : null,
+            tid: row.selectedFields.TID && row.TID?.trim() ? row.TID.trim() : null,
+            vpaid: row.selectedFields.VpID && row.VpID?.trim() ? row.VpID.trim() : null
           }));
 
         console.log('Final transformed array:', transformed);
@@ -226,6 +243,13 @@ const InwardFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
         return;
       }
 
+      // ✅ Validation: the same MID / TID / SID / VPAID twice in one entry (the server refuses it too)
+      const repeated = findRepeatedSerialValue(serialNumbers);
+      if (repeated) {
+        toast.error(`${repeated} is entered more than once. Each MID, TID, SID and VPAID must be different.`);
+        return;
+      }
+
       const submissionData = {
         ...data,
         serialNumbers,
@@ -234,10 +258,13 @@ const InwardFormModal = ({ isOpen, onClose, onSubmit, editData = null }) => {
 
       console.log('Final submission data:', submissionData);
 
+      // Close and clear the form only after the save worked. If it fails, everything the person typed stays.
+      const saved = await onSubmit(submissionData);
+      if (saved === false) return;
+
       reset();
       setSerialGridData([]);
       onClose();
-      await onSubmit(submissionData);
 
     } finally {
       setIsSubmitting(false)

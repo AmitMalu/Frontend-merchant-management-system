@@ -122,9 +122,11 @@ const InventoryManagement = () => {
             await fetchInwardData();
             setIsInwardModalOpen(false);
             setEditingInward(null);
+            return true;
         } catch (error) {
             console.error('Error saving inward transaction:', error);
             toast.error(error.message);
+            return false;   // the form stays open with everything the person typed
         } finally {
             setLoading(false);
         }

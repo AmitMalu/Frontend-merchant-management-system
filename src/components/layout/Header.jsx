@@ -8,7 +8,8 @@ import {
   HelpCircle,
   Wallet,
   Ticket,
-  Bell
+  Bell,
+  RefreshCw
 } from 'lucide-react';
 import api from '../../constants/API/axiosInstance';
 import logoImage from '../../assets/SD-2.jpg';
@@ -79,6 +80,18 @@ const Header = ({ userType }) => {
   useEffect(() => {
     fetchProfile();
   }, [userType]);
+
+  // Wallet refresh button (merchant and franchise): reloads the profile to get the latest balance.
+  const [refreshingWallet, setRefreshingWallet] = useState(false);
+  const refreshWallet = async () => {
+    if (refreshingWallet) return;
+    setRefreshingWallet(true);
+    try {
+      await fetchProfile();
+    } finally {
+      setRefreshingWallet(false);
+    }
+  };
 
   // Refresh the header's wallet balance immediately when a credit/debit
   // transfer completes elsewhere (e.g. the franchise Credit/Debit Wallet
@@ -265,6 +278,16 @@ const Header = ({ userType }) => {
                       ₹{profileData.walletBalance?.toLocaleString() ?? '0'}
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={refreshWallet}
+                    disabled={refreshingWallet}
+                    title="Refresh wallet balance"
+                    aria-label="Refresh wallet balance"
+                    className="hd-wallet-refresh p-1.5 rounded-md text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-60"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshingWallet ? 'animate-spin' : ''}`} />
+                  </button>
                 </div>
               )}
 
