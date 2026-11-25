@@ -16,6 +16,7 @@ import {
     Handshake
 } from 'lucide-react';
 import api from '../../constants/API/axiosInstance';
+import PaymentsTodayCards from './PaymentsTodayCards';
 
 const AdminDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
@@ -194,6 +195,9 @@ const AdminDashboard = () => {
                         subtitle={`${pricingSchemeStats?.totalDirectMerchantSchemes || 0} direct, ${pricingSchemeStats?.totalFranchiseSchemes || 0} franchise`}
                     />
                 </div>
+
+                {/* Payout and Bill payment: today's numbers */}
+                <PaymentsTodayCards />
 
                 {/*Expiring Schemes  & Wallet Balance Overview */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
