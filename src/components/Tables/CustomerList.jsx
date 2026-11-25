@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, act } from 'react'
+import AddressCell from '../UI/AddressCell'
 import {
     useReactTable,
     getCoreRowModel,
@@ -653,15 +654,6 @@ const CustomerListComponent = () => {
             ),
             size: 250,
         }),
-        columnHelper.accessor('address', {
-            header: 'Location',
-            cell: (info) => (
-                <div className="flex items-center space-x-2">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{info.getValue()}</span>
-                </div>
-            ),
-        }),
         columnHelper.accessor('merchantCount', {
             header: 'Merchants',
             cell: (info) => (
@@ -680,6 +672,11 @@ const CustomerListComponent = () => {
                     <span className="font-medium">₹{(info.getValue() || 0).toLocaleString()}</span>
                 </div>
             ),
+        }),
+        columnHelper.accessor('address', {
+            header: 'Location',
+            cell: (info) => <AddressCell address={info.getValue()} />,
+            size: 260,
         }),
         columnHelper.accessor('status', {
             header: 'Status',
@@ -738,15 +735,6 @@ const CustomerListComponent = () => {
             size: 250,
         }),
         
-        columnHelper.accessor('address', {
-            header: 'Location',
-            cell: (info) => (
-                <div className="flex items-center space-x-2">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{info.getValue()}</span>
-                </div>
-            ),
-        }),
         columnHelper.accessor('products', {
             header: 'Products',
             cell: (info) => (
@@ -765,6 +753,11 @@ const CustomerListComponent = () => {
                     <span className="font-medium">₹{(info.getValue() || 0).toLocaleString()}</span>
                 </div>
             ),
+        }),
+        columnHelper.accessor('address', {
+            header: 'Location',
+            cell: (info) => <AddressCell address={info.getValue()} />,
+            size: 260,
         }),
         
         columnHelper.accessor('status', {
@@ -822,15 +815,6 @@ const CustomerListComponent = () => {
             size: 250,
         }),
         
-        columnHelper.accessor('address', {
-            header: 'Location',
-            cell: (info) => (
-                <div className="flex items-center space-x-2">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{info.getValue()}</span>
-                </div>
-            ),
-        }),
         columnHelper.accessor('products', {
             header: 'Products',
             cell: (info) => (
@@ -849,6 +833,11 @@ const CustomerListComponent = () => {
                     <span className="font-medium">₹{(info.getValue() || 0).toLocaleString()}</span>
                 </div>
             ),
+        }),
+        columnHelper.accessor('address', {
+            header: 'Location',
+            cell: (info) => <AddressCell address={info.getValue()} />,
+            size: 260,
         }),
       
         columnHelper.accessor('status', {
