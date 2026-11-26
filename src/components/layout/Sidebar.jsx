@@ -33,7 +33,8 @@ import {
   KeyRound,
   ShieldAlert,
   AlertTriangle,
-  BellRing
+  BellRing,
+  MessageSquare
 } from 'lucide-react';
 import { flattenPermissions } from "./permissionHelper";
 import api from '../../constants/API/axiosInstance';
@@ -100,7 +101,7 @@ const SUPER_ADMIN_PERMISSIONS = new Set([
   'Inventory', 'Pricing Scheme', 'Product Scheme Assign', 'Inventory Management',
   'Customers', 'Customer List', 'Onboard Customer', 'Merchant Approval', 'Products Distribution', 'Change Password',
   'Payment', 'Payment Products', 'Payment Charges', 'Payment Vendors', 'Payment Vendors Credentials', 'Payment Vendor Routing',
-  'Other', 'File Upload', 'Charge Calculation', 'Batch Status', 'Prefund Authorization', 'Merchant Settings', 'Update Transaction', 'Notification URL',
+  'Other', 'File Upload', 'Charge Calculation', 'Batch Status', 'Prefund Authorization', 'Merchant Settings', 'Update Transaction', 'Notification URL', 'SMS Settings',
   'Transaction Monitoring',
   'Support Tickets',
   'Reports'
@@ -331,7 +332,8 @@ const ADMIN_MENU_CONFIG = (userType) => [
       { title: 'Prefund Authorization', path: '/dashboard/others/prefund-authorization', icon: Eye, permission: 'Prefund Authorization' },
       { title: 'Merchant Settings', path: '/dashboard/others/merchant-settings', icon: SlidersHorizontal, permission: 'Merchant Settings' },
       { title: 'Update Transaction', path: '/dashboard/others/update-transaction', icon: RefreshCw, permission: 'Update Transaction' },
-      { title: 'Notification URL', path: '/dashboard/others/notification-urls', icon: BellRing, permission: 'Notification URL' }
+      { title: 'Notification URL', path: '/dashboard/others/notification-urls', icon: BellRing, permission: 'Notification URL' },
+      { title: 'SMS Settings', path: '/dashboard/others/sms-settings', icon: MessageSquare, permission: 'SMS Settings' }
     ]
   },
   {

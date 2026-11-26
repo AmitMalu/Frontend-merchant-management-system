@@ -86,7 +86,10 @@ const Layout = () => {
           {/* Footer */}
           <footer className="w-full text-center py-2 bg-white/30 backdrop-blur-md border-t border-gray-200 shadow-sm">
             <p className="text-gray-700 text-xs tracking-wide">
-              © {new Date().getFullYear()} <span className="font-medium">Powered by Shashwat Infotech Pvt. Ltd.</span>
+              © {new Date().getFullYear()}{" "}
+              <span className="font-medium">UtsabPay by SMARTCREDIT SOLUTIONS PRIVATE LIMITED</span>
+              <span className="mx-2 opacity-60">|</span>
+              <span className="font-medium">Powered by Shashwat Infotech Pvt. Ltd.</span>
             </p>
           </footer>
         </div>

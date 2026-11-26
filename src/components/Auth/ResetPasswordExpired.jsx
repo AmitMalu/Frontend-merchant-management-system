@@ -207,6 +207,8 @@ const ResetPasswordExpired = () => {
            <footer className="text-center py-2 bg-gradient-to-br from-gray-500 to-gray-700">
         <p className="text-white text-xs tracking-wide">
           © {new Date().getFullYear()}{" "}
+          <span className="font-medium">UtsabPay by SMARTCREDIT SOLUTIONS PRIVATE LIMITED</span>
+          <span className="mx-2 opacity-60">|</span>
           <span className="font-medium">Powered by Shashwat Infotech Pvt. Ltd.</span>
         </p>
       </footer>
